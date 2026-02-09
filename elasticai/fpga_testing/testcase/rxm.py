@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 import numpy as np
+from matplotlib import pyplot as plt
 
-from elasticai.creator_plugins.test_env.src.control_dut import DeviceUnderTestHandler
-from elasticai.creator_plugins.test_env.src.yaml_handler import YamlConfigHandler
-from elasticai.creator_plugins.test_env.testcase.handler import ExperimentMain
-from elasticai.creator_plugins.test_env.src.plotting import plot_call
+from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
+from elasticai.fpga_testing.src.exp_runner import ExperimentMain
+from elasticai.fpga_testing.src.plotting import get_color_plot, save_figure
+from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
 
 
 @dataclass
@@ -105,3 +106,27 @@ def run_rom_test_on_target(device_id: int, block_plot: bool=False) -> None:
     data_dut['data_out'].append(data_out)
     np.save(f'{exp0.get_path2run}/results_rom.npy', data_dut, allow_pickle=True)
     plot_call(data_out, exp0.get_path2run, block_plot=block_plot)
+
+
+def plot_call(xout: np.ndarray, path: str='', block_plot: bool=False) -> None:
+    """Plotting the signals from calling the DUT
+    Args:
+        xout:           Numpy array with transient signal which returns from device
+        path:           Path for saving the results
+        block_plot:     Blocking and showing plot
+    Returns:
+        None
+    """
+    plt.figure()
+    plt.plot(xout, marker='.', markersize=4, color=get_color_plot(0), label='Output')
+
+    plt.xlim([0, xout.size])
+    plt.xlabel('Call Iteration')
+    plt.ylabel(r'X_${out}$')
+
+    plt.grid()
+    plt.tight_layout(pad=0.5)
+    if path:
+        save_figure(plt, path, f'call_lut')
+    if block_plot:
+        plt.show(block=True)

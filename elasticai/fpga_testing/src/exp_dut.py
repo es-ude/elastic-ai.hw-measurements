@@ -1,6 +1,7 @@
 import numpy as np
 from time import sleep
-from elasticai.creator_plugins.test_env.src.python_serial import HandlerUSB, scan_available_serial_ports
+
+from .interface_serial import HandlerUSB, scan_available_serial_ports
 
 
 class DeviceUnderTestHandler:

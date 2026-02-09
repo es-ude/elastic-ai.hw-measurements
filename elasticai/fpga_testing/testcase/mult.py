@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 import numpy as np
-from elasticai.creator_plugins.test_env.src.control_dut import DeviceUnderTestHandler
-from elasticai.creator_plugins.test_env.src.yaml_handler import YamlConfigHandler
-from elasticai.creator_plugins.test_env.testcase.handler import ExperimentMain
-from elasticai.creator_plugins.test_env.src.plotting import plot_arithmetic
+from matplotlib import pyplot as plt
+
+from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
+from elasticai.fpga_testing.src.exp_runner import ExperimentMain
+from elasticai.fpga_testing.src.plotting import get_color_plot, save_figure
+from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
 
 
 @dataclass
@@ -151,3 +153,28 @@ if __name__ == '__main__':
         device_id=1,
         block_plot=True
     )
+
+
+def plot_arithmetic(data_out: np.ndarray, data_ref: np.ndarray,
+                    path2save: str='', block_plot: bool=False) -> None:
+    """Function for plotting the arithmetic test results
+    :param data_out:    Numpy array with output values
+    :param data_ref:    Numpy array with reference values
+    :param path2save:   Path for saving the results
+    :param block_plot:  Blocking and showing plot
+    :return:            None
+    """
+    plt.figure()
+    plt.plot(data_ref, data_out, marker='.', linestyle='None', color=get_color_plot(0))
+    plt.xlabel(r'Digital Input $x$')
+    plt.ylabel(r'Digital Output $y$')
+
+    mae = np.sum(np.abs(data_ref - data_out)) / data_ref.size
+    plt.title(f'MAE = {mae:.4f}')
+
+    plt.grid(True)
+    plt.tight_layout(pad=0.5)
+    if path2save:
+        save_figure(plt, path2save, 'arith_test')
+    if block_plot:
+        plt.show(block=True)

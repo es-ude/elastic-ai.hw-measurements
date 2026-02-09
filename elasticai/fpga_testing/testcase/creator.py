@@ -1,11 +1,51 @@
 from dataclasses import dataclass
 import numpy as np
-from torch import nn, Tensor
+from torch import Tensor, ones_like, zeros, cat
 
-from elasticai.creator_plugins.test_env.src.control_dut import DeviceUnderTestHandler
-from elasticai.creator_plugins.test_env.creator_data.template import get_basic_test_model, get_basic_data_model
-from elasticai.creator_plugins.test_env.src.yaml_handler import YamlConfigHandler
-from elasticai.creator_plugins.test_env.testcase.handler import ExperimentMain
+from elasticai.creator.arithmetic import FxpArithmetic, FxpParams
+from elasticai.creator.nn import Sequential
+from elasticai.creator.nn.fixed_point import Linear
+
+from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
+from elasticai.fpga_testing.src.exp_runner import ExperimentMain
+from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
+
+
+def get_basic_test_model(num_inputs: int, num_outputs: int, total_bits: int, frac_bits: int) -> Sequential:
+    model = Sequential(
+        Linear(
+            in_features=num_inputs,
+            out_features=num_outputs,
+            bias=True,
+            total_bits=total_bits,
+            frac_bits=frac_bits,
+        )
+    )
+    model[0].weight.data = ones_like(model[0].weight) * 2
+    model[0].bias.data = Tensor([-1.0, 1.0, 2.0])
+    return model
+
+
+def get_basic_data_model(num_input: int, bit_width: int, frac_width: int, signed_data: bool) -> Tensor:
+    max_val = (2**(bit_width - frac_width))
+    start_value = -max_val/2 if signed_data else 0
+    stop_value = max_val/2 if signed_data else max_val
+
+    # Creating the dummy
+    input_tensor = zeros((1, num_input))
+    for idx_array in range(0, num_input):
+        for value in np.arange(start_value, stop_value, 2**(-frac_width)):
+            list_zeros = [0.0 for _ in range(0, num_input)]
+            list_zeros[idx_array] = value
+
+            new_input = Tensor([list_zeros])
+            input_tensor = cat(
+                (input_tensor, new_input), dim=0
+            )
+
+    # Converting to fixed point
+    fxp_conf = FxpArithmetic(fxp_params=FxpParams(bit_width, frac_width))
+    return fxp_conf.as_rational(fxp_conf.cut_as_integer(input_tensor))
 
 
 @dataclass
@@ -17,14 +57,22 @@ class SettingsCreator:
     skeleton_id: bytes
 
     @property
-    def get_model(self) -> nn.Sequential:
-        return get_basic_test_model(num_inputs=self.num_samples_input, num_outputs=self.num_samples_output,
-                                    total_bits=self.model_bitwidth, frac_bits=self.model_bitfrac)
+    def get_model(self) -> Sequential:
+        return get_basic_test_model(
+            num_inputs=self.num_samples_input,
+            num_outputs=self.num_samples_output,
+            total_bits=self.model_bitwidth,
+            frac_bits=self.model_bitfrac
+        )
 
     @property
     def get_data(self) -> Tensor:
-        return get_basic_data_model(num_input=self.num_samples_input, bit_width=self.model_bitwidth, frac_width=self.model_bitfrac,
-                                    signed_data=True, inc_value=4)
+        return get_basic_data_model(
+            num_input=self.num_samples_input,
+            bit_width=self.model_bitwidth,
+            frac_width=self.model_bitfrac,
+            signed_data=True
+        )
 
     @property
     def get_skeleton_id_integer(self) -> int:
@@ -129,7 +177,7 @@ class ExperimentCreator(ExperimentMain):
         return data0
 
 
-def run_creator_inference_on_target(device_id: int, block_plot: bool=False) -> None:
+def run_inference_on_target(device_id: int, block_plot: bool=False) -> None:
     """Function for running the DNN (quantized) test with structures on target device
     :param device_id:   Integer value with device ID of test structure
     :param block_plot:  If true, blocking and showing plots

@@ -49,7 +49,7 @@ dependencies = [
 
 
 [tool.uv]
-default-groups = ["dev", "docs", "testing"]
+default-groups = ["dev", "docs", "fpga", "testing"]
 
 
 [dependency-groups]
@@ -58,6 +58,9 @@ dev = [
     "hatch-vcs>=0.4.0",
     "hatchling>=1.27.0",
     "wheel>=0.45.1",
+]
+fpga = [
+    "elasticai-creator>=0.67.0",
 ]
 testing = [
     "pytest>=8.3.4",

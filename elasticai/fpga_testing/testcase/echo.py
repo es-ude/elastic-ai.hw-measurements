@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 import numpy as np
+from matplotlib import pyplot as plt
 
-from elasticai.creator_plugins.test_env.src.control_dut import DeviceUnderTestHandler
-from elasticai.creator_plugins.test_env.src.yaml_handler import YamlConfigHandler
-from elasticai.creator_plugins.test_env.testcase.handler import ExperimentMain
-from elasticai.creator_plugins.test_env.src.plotting import plot_transient
-from elasticai.creator_plugins.test_env.src.signal_generator import generate_sinusoidal_waveform
+from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
+from elasticai.fpga_testing.src.exp_runner import ExperimentMain
+from elasticai.fpga_testing.src.plotting import get_color_plot, save_figure
+from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
+from elasticai.fpga_testing.src.signal_generator import generate_sinusoidal_waveform
 
 
 @dataclass
@@ -110,3 +111,42 @@ if __name__ == '__main__':
         device_id=0,
         block_plot=True
     )
+
+
+def plot_transient(t0: np.ndarray, xin: np.ndarray, xout: np.ndarray, path: str='', fsig: float=0.0, block_plot: bool=False, is_echo_test: bool=False) -> None:
+    """Plotting the transient signals
+    Args:
+        t0:             Numpy array with transient timestamp
+        xin:            Numpy array with transient signal which is transferred to device
+        xout:           Numpy array with transient signal which returns from device
+        path:           Path for saving the results
+        fsig:           Signal frequency
+        block_plot:     Blocking and showing plot
+        is_echo_test:   Echo test
+    Returns:
+        None
+    """
+    plt.figure()
+
+    if fsig:
+        xpos0 = np.argwhere(t0 >= 1/fsig).flatten()[0]
+        xpos1 = np.argwhere(t0 >= 5/fsig).flatten()[0]
+
+        plt.plot(t0[xpos0:xpos1], xin[xpos0:xpos1], marker='.', markersize=4, color=get_color_plot(0), label='Input')
+        plt.plot(t0[xpos0:xpos1], xout[xpos0:xpos1], marker='.', markersize=4, color=get_color_plot(1), label='Output')
+    else:
+        plt.plot(t0, xin, marker='.', markersize=4, color=get_color_plot(0), label='Input')
+        plt.plot(t0, xout, marker='.', markersize=4, color=get_color_plot(1), label='Output')
+
+    plt.xlabel('Time / s')
+    plt.ylabel('X_y')
+    if is_echo_test:
+        plt.title(f'MAE of Echo Test: {np.sum(np.abs(xin - xout))}')
+    plt.legend(loc='upper left')
+
+    plt.grid()
+    plt.tight_layout(pad=0.5)
+    if path:
+        save_figure(plt, path, f'transient_{int(fsig)}Hz')
+    if block_plot:
+        plt.show(block=True)

@@ -3,12 +3,10 @@ from time import time_ns
 from datetime import datetime
 from tqdm import tqdm
 from dataclasses import dataclass
-from elasticai.creator_plugins.test_env.src.control_dut import DeviceUnderTestHandler, scan_available_serial_ports
-from elasticai.creator_plugins.test_env.src.yaml_handler import YamlConfigHandler
 
-
-def get_path_to_project() -> str:
-    return os.path.join(os.getcwd().split('python')[0], 'python')
+from elasticai.fpga_testing.src.helper import get_path_to_project
+from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler, scan_available_serial_ports
+from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
 
 
 @dataclass
@@ -30,7 +28,6 @@ class ExperimentMain:
     __device_buf:       int
     __path2run:         str
     _settings: ExperimentSettings
-    _path2main: str
     _type_experiment: str
     _buffer_data_send: list
     _buffer_data_get: bytes
@@ -43,10 +40,9 @@ class ExperimentMain:
         Returns:
             None
         """
-        self._path2main = os.path.join(get_path_to_project(), 'config')
         yaml_data = YamlConfigHandler(
             yaml_template=DefaultSettings,
-            path2yaml=self._path2main,
+            path2yaml=get_path_to_project('config'),
             yaml_name=f'Config_Exp',
             start_folder='python'
         )
@@ -110,19 +106,3 @@ class ExperimentMain:
         self._device.do_led_control(False)
         self._device.close_serial()
         return process_duration
-
-
-def extract_available_structures_on_device(print_rqst: bool=False) -> [list, list]:
-    """Function for extracting available structures on device
-    :param print_rqst:  Print request data from device (getting all meta data)
-    :return:            Two list with [0] available structures on device and [1] selected test on device
-    """
-    exp = ExperimentMain()
-    exp.init_experiment(index='', generate_folder=False)
-
-    set = exp.get_settings
-    return exp.get_dut_type(print_results=print_rqst), set.selected_dut
-
-
-if __name__ == '__main__':
-    extract_available_structures_on_device()

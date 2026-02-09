@@ -1,9 +1,11 @@
-from elasticai.creator_plugins.test_env.testcase.handler import extract_available_structures_on_device
-from elasticai.creator_plugins.test_env.testcase.echo import run_echo_on_target
-from elasticai.creator_plugins.test_env.testcase.mult import run_mult_on_target
-from elasticai.creator_plugins.test_env.testcase.rxm import run_rom_test_on_target
-from elasticai.creator_plugins.test_env.testcase.bode import run_filter_on_target
-from elasticai.creator_plugins.test_env.testcase.creator import run_creator_inference_on_target
+from elasticai.fpga_testing.testcase import (
+    extract_available_structures_on_device,
+    run_echo_on_target,
+    run_filter_on_target,
+    run_inference_on_target,
+    run_mult_on_target,
+    run_rom_test_on_target,
+)
 
 
 def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> None:
@@ -33,7 +35,7 @@ def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> 
             case 6:
                 raise NotImplementedError
             case 7:
-                run_creator_inference_on_target(device_id=used_skeleton, block_plot=do_plot)
+                run_inference_on_target(device_id=used_skeleton, block_plot=do_plot)
 
 
 if __name__ == "__main__":
