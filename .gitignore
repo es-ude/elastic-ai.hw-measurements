@@ -17,13 +17,7 @@ uv.lock
 
 
 ### VIVADO
-**/design_project.cache/
-**/design_project.hw/
-**/design_project.ip_user_files/
-**/design_project.sim/
-**/design_project.runs/
-**/vivado.jou
-**/vivado.log
+**/fpga_design/*
 
 # Vivado files
 **/*.yaml
@@ -33,4 +27,3 @@ uv.lock
 **/*.ip_user_files/*
 **/*.runs/*
 **/*.sim/*
-
