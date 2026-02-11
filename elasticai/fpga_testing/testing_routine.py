@@ -4,6 +4,7 @@ from elasticai.fpga_testing.testcase import (
     run_filter_on_target,
     run_inference_on_target,
     run_mult_on_target,
+    run_ram_test_on_target,
     run_rom_test_on_target,
 )
 
@@ -29,7 +30,7 @@ def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> 
             case 3:
                 run_rom_test_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 4:
-                raise NotImplementedError
+                run_ram_test_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 5:
                 run_filter_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 6:

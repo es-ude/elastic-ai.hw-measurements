@@ -63,7 +63,7 @@ class YamlConfigHandler:
         """Getting the path to the desired YAML file"""
         return join(self.__path2yaml, f"{self.__yaml_name}.yaml")
 
-    def __init__(self, yaml_template: type | dict, path2yaml='config', yaml_name='Config_Train', start_folder='3_Python'):
+    def __init__(self, yaml_template: type | dict, path2yaml='config', yaml_name='Config_Train', start_folder=''):
         """Creating a class for handling YAML files
         Args:
             yaml_template:      Dummy dataclass with entries or dictionary (is only generated if YAML not exist)
@@ -71,7 +71,7 @@ class YamlConfigHandler:
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
             start_folder:       Folder to start looking for configuration folder
         """
-        self.__path2yaml = join(getcwd().split(start_folder)[0], start_folder, path2yaml)
+        self.__path2yaml = join(start_folder, path2yaml)
         self.__yaml_name = self.__remove_ending_from_filename(yaml_name)
 
         if not exists(self.path2chck):

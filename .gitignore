@@ -15,12 +15,9 @@ docs/apidocs
 uv.lock
 .python-version
 
-
 ### VIVADO
-**/fpga_design/*
-
 # Vivado files
-**/*.yaml
+**/fpga_design/*
 **/.Xil/*
 **/*.cache/*
 **/*.hw/*

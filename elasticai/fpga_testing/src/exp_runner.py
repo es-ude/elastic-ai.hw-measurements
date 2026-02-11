@@ -1,8 +1,8 @@
-import os
-from time import time_ns
-from datetime import datetime
-from tqdm import tqdm
 from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from time import time_ns
+from tqdm import tqdm
 
 from elasticai.fpga_testing.src.helper import get_path_to_project
 from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler, scan_available_serial_ports
@@ -26,7 +26,7 @@ DefaultSettings = ExperimentSettings(
 class ExperimentMain:
     _device: DeviceUnderTestHandler
     __device_buf:       int
-    __path2run:         str
+    __path2run:         Path
     _settings: ExperimentSettings
     _type_experiment: str
     _buffer_data_send: list
@@ -42,9 +42,9 @@ class ExperimentMain:
         """
         yaml_data = YamlConfigHandler(
             yaml_template=DefaultSettings,
-            path2yaml=get_path_to_project('config'),
+            path2yaml='config',
             yaml_name=f'Config_Exp',
-            start_folder='python'
+            start_folder=get_path_to_project()
         )
         self._settings = yaml_data.get_class(ExperimentSettings)
         self.__device_buf = buffer_size
@@ -54,7 +54,7 @@ class ExperimentMain:
     @property
     def get_path2run(self) -> str:
         """Getting the path for saving the results"""
-        return self.__path2run
+        return str(self.__path2run.absolute())
 
     @property
     def get_settings(self) -> ExperimentSettings:
@@ -62,7 +62,6 @@ class ExperimentMain:
         return self._settings
 
     def get_dut_type(self, print_results: bool = False) -> list:
-        """"""
         result = self._device.get_dut_config_all(print_results=print_results)
         return [info['dut_type'] for info in result.values()]
 
@@ -70,10 +69,8 @@ class ExperimentMain:
         """Generating the folder for saving the results"""
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         folder = timestamp + f'{self._type_experiment}{index}'
-
-        self.__path2run = os.path.join('runs', folder)
-        if not os.path.exists(self.__path2run):
-            os.makedirs(self.__path2run, exist_ok=True)
+        self.__path2run = Path(get_path_to_project('runs')) / folder
+        self.__path2run.mkdir(parents=True, exist_ok=True)
 
     def init_experiment(self, index='', generate_folder:bool=True) -> str:
         """Initialization of the experiment with enabling the communication"""
