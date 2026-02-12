@@ -1,44 +1,31 @@
-import sys
 import serial
-from glob import glob
+from serial.tools import list_ports
 
 
 def scan_available_serial_ports() -> list:
-    """ Lists serial port names
-
-        :raises EnvironmentError:
-            On unsupported or unknown platforms
-        :returns:
-            A list of the serial ports available on the system
+    """Returning the COM Port name of the addressable devices
+    :return: List with COM port name
     """
-    if sys.platform.startswith('win'):
-        ports = ['COM%s' % (i + 1) for i in range(256)]
-    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
-        # this excludes your current terminal "/dev/tty"
-        ports = glob('/dev/tty[A-Za-z]*')
-    elif sys.platform.startswith('darwin'):
-        ports = glob('/dev/tty.*')
-    else:
-        raise EnvironmentError('Unsupported platform')
-
-    result = []
-    for port in ports:
-        try:
-            s = serial.Serial(port)
-            s.close()
-            result.append(port)
-        except (OSError, serial.SerialException):
-            pass
-    return result
+    available_coms = list_ports.comports()
+    list_right_com = [port.device for port in available_coms]
+    if len(list_right_com) == 0:
+        errmsg = '\n'.join([f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms])
+        raise ConnectionError(f"No COM Port with right USB found:\n{errmsg}")
+    return list_right_com
 
 
 class HandlerUSB:
+    """Class for handling serial ports in Python"""
     __BYTES_HEAD: int = 1
     __BYTES_DATA: int = 2
 
-    """Class for handling serial ports in Python"""
-    def __init__(self, com_name: str, baud: int, buffer_bytesize: int):
-        """Init. of the device with name and baudrate of the device"""
+    def __init__(self, com_name: str, baud: int, buffer_bytesize: int) -> None:
+        """Init. of the device with name and baudrate of the device
+        :param com_name:        String with name of the COM port
+        :param baud:            Integer with Baud rate of the device
+        :param buffer_bytesize: Integer with buffer size
+        :return: None
+        """
         self.SerialName = com_name
         self.SerialBaud = baud
         self.SerialParity = 0

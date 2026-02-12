@@ -10,13 +10,13 @@ source = "vcs"
 [tool.hatch.build.targets.sdist]
 where = ["."]
 include = ["elasticai"]
-exclude = ['*_test.py', 'hardware', 'example', 'test_data', 'run_tests.py']
+exclude = ['*_test.py', 'hardware', 'example', 'test_data', 'runs', 'run_tests.py']
 namespaces = false
 
 
 [tool.hatch.build.targets.wheel]
 packages = ["elasticai"]
-exclude = ['*_test.py', 'hardware', 'example', 'test_data', 'run_tests.py']
+exclude = ['*_test.py', 'hardware', 'example', 'test_data', 'runs', 'run_tests.py']
 only-packages = true
 
 
@@ -39,6 +39,7 @@ dependencies = [
     "matplotlib>=3.10.3",
     "numpy>=2.2.2",
     "pyserial>=3.5",
+    "pytest>=9.0.1",
     "pyvisa>=1.14.1",
     "pyvisa-py>=0.7.2",
     "pyyaml>=6.0.2",

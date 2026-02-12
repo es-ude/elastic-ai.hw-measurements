@@ -1,8 +1,8 @@
 .idea
-build
-temp_test
-docs/apidocs
 
+**/docs/apidocs
+**/build*
+**/temp*
 **/config
 **/dist
 **/runs
@@ -15,12 +15,5 @@ docs/apidocs
 uv.lock
 .python-version
 
-### VIVADO
-# Vivado files
-**/fpga_design/*
-**/.Xil/*
-**/*.cache/*
-**/*.hw/*
-**/*.ip_user_files/*
-**/*.runs/*
-**/*.sim/*
+### VIVADO files
+**/fpga_design
