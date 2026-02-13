@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import numpy as np
 from matplotlib import pyplot as plt
 
+from elasticai.fpga_testing import get_path_to_project
 from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
 from elasticai.fpga_testing.src.exp_runner import ExperimentMain
 from elasticai.fpga_testing.src.plotting import get_color_plot, save_figure
@@ -23,9 +24,9 @@ class SettingsEcho:
                                             bitwidth=self.bitwidth_data, signed_out=self.signed_data)[1]
 
 DefaultSettingsEcho = SettingsEcho(
-    sampling_rate=2e3,
+    sampling_rate=5e2,
     freq_signal=1e1,
-    num_periods=10,
+    num_periods=4,
     bitwidth_data=16,
     signed_data=False,
 )
@@ -46,13 +47,13 @@ class ExperimentEcho(ExperimentMain):
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsEcho
         set.bitwidth_data = self.get_bitwidth_data
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_Echo{device_id:03d}', start_folder='python')
+        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_Echo{device_id:03d}', start_folder=get_path_to_project())
         self.__settings_echo = yaml_handler.get_class(SettingsEcho)
         self.__data_scaling_value = 2 ** (self._device.get_bitwidth_data - self.__settings_echo.bitwidth_data)
 
     @property
     def get_bitwidth_data(self) -> int:
-        return self.__header['bit_output']
+        return self.__header.bitwidth_output
 
     @property
     def get_settings_func(self) -> SettingsEcho:
@@ -72,7 +73,8 @@ class ExperimentEcho(ExperimentMain):
         """Post-processing the data from device to have in readable format and numpy format"""
         data_return = self._device.slice_data_from_transmission(
             data=self._buffer_data_get,
-            is_signed=self.__settings_echo.signed_data
+            is_signed=self.__settings_echo.signed_data,
+            stepsize=2
         )
         return data_return / self.__data_scaling_value
 

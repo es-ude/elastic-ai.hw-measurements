@@ -83,11 +83,14 @@ class DeviceUnderTestHandler:
             self.__device.close()
 
     # --------------------------------------- FUNCTIONS FOR HANDLING DEVICE ---------------------------------
+    def _get_bytes_dut_selection(self, device_id: int) -> bytes:
+        return self.data_to_hex(self.__REG_DUT_CNTRL, 2, device_id<<1, False)
+
     def select_device_for_testing(self, device_id: int) -> None:
         """Function for selecting the Device under Test (DUT) on target device
         :return:        None
         """
-        data = self.data_to_hex(self.__REG_DUT_CNTRL, 2, device_id, False)
+        data = self._get_bytes_dut_selection(device_id)
         self.__device.write_wofb(data)
 
     def do_led_control(self, state: bool) -> None:
@@ -130,9 +133,9 @@ class DeviceUnderTestHandler:
     # --------------------------------------- FUNCTIONS FOR GETTING HEADER INFORMATION ---------------------------------
     def get_dut_config(self, sel_target: int) -> ConfigurationDUT:
         """Function for calling the header configuration of implemented device on target device"""
-        self.__device.device.reset_input_buffer()
+        self.__device.empty_input_buffer()
         data_send = bytes()
-        data_send += self.data_to_hex(self.__REG_DUT_CNTRL, 2, sel_target<<1, False)
+        data_send += self._get_bytes_dut_selection(sel_target)
         data_send += self.data_to_hex(self.__REG_DUT_HEAD, 1, False)
         data_send += self.data_to_hex(self.__REG_DUT_HEAD, 0, False)
         data_send += self.data_to_hex(0, 0, False)
@@ -157,12 +160,12 @@ class DeviceUnderTestHandler:
     def get_dut_config_all(self, print_results: bool = True) -> dict:
         """Loading the header information of each implemented test device (skeleton) on target device
         :param print_results:   Printing the results of each test device
-        :returns:               Dictionary of header information ['num_duts', 'dut_type', 'num_input', 'num_output', 'bit_input', 'bit_output']
+        :returns:               Dict with Dataclass with ConfigurationDUT ['num_duts', 'dut_type', 'num_input', 'num_output', 'bit_input', 'bit_output']
         """
         config0 = self.get_dut_config(0)
 
         dict_config = dict()
-        for idx in range(config0['num_duts']):
+        for idx in range(config0.num_duts):
             dict_config.update({f'dev{idx:02d}': self.get_dut_config(idx)})
         if print_results:
             self.__print_dict_config(dict_config)
@@ -204,19 +207,16 @@ class DeviceUnderTestHandler:
     def slice_data_for_transmission(self, data: bytes) -> list[int | bytes]:
         """Preparing the data stream to FPGA by converting the numpy input"""
         buffer_to_send = list()
-        no_of_repetitions = len(data) / self.__buffer_size
-        for rep in range(0, int(no_of_repetitions)):
+        no_of_repetitions = int(np.ceil(len(data) / self.__buffer_size))
+        for rep in range(0, no_of_repetitions):
             buffer_to_send.append(data[rep * self.__buffer_size: (rep + 1) * self.__buffer_size])
-
-        if not no_of_repetitions - int(no_of_repetitions) == 0:
-            buffer_to_send.append(data[int(no_of_repetitions) * self.__buffer_size:])
         return buffer_to_send
 
-    def slice_data_from_transmission(self, data: bytes, is_signed: bool) -> np.ndarray:
+    def slice_data_from_transmission(self, data: bytes, is_signed: bool, stepsize: int=1) -> np.ndarray:
         """Slicing the data from FPGA and transfer it into numpy format"""
         data_sliced = self.slice_data_to_packet_size(data=data)
         data_out = list()
-        for data in data_sliced[self.get_slicing_position:]:
+        for data in data_sliced[self.get_slicing_position*stepsize::stepsize]:
             val = self.data_from_hex(data, is_signed)
             data_out.append(val)
 
@@ -231,21 +231,18 @@ class DeviceUnderTestHandler:
         return data_sliced
 
     # -------------------------------------------- FUNCTIONS FOR TESTING ------------------------------------------
-    def preparing_data_streaming_architecture(self, signal: np.ndarray, bit_position_start: int,
-                                              is_signed: bool=False) -> bytes:
+    def preparing_data_streaming_architecture(self, signal: np.ndarray, bit_position_start: int, is_signed: bool=False) -> bytes:
         """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
         data = bytes()
+        self.__device.empty_input_buffer()
         for val in signal:
-            data += self.data_to_hex(
-                reg=self.__REG_DUT_CNTRL,
-                adr=1,
-                data=val*bit_position_start,
-                is_signed=is_signed
-            )
+            data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=0, data=val*bit_position_start, is_signed=is_signed)
+            data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=1, data=0, is_signed=False)
+        data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
+        data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
         return data
 
-    def preparing_data_memory_write_architecture(self, signal: np.ndarray, adr_start: int, bit_position_start: int,
-                                                 is_signed: bool = False) -> bytes:
+    def preparing_data_memory_write_architecture(self, signal: np.ndarray, adr_start: int, bit_position_start: int, is_signed: bool = False) -> bytes:
         """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
         data = self.data_to_hex(
             reg=self.__REG_DUT_CNTRL,

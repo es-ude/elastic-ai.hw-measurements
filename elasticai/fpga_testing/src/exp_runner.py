@@ -64,7 +64,7 @@ class ExperimentMain:
 
     def get_dut_type(self, print_results: bool = False) -> list:
         result = self._device.get_dut_config_all(print_results=print_results)
-        return [info['dut_type'] for info in result.values()]
+        return [info.dut_type for info in result.values()]
 
     def __generate_saving_folder(self, index='') -> None:
         """Generating the folder for saving the results"""

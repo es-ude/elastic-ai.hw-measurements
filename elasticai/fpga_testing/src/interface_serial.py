@@ -104,3 +104,6 @@ class HandlerUSB:
     def read(self, no_bytes: int):
         """Read content from device"""
         return self.device.read(no_bytes)
+
+    def empty_input_buffer(self) -> None:
+        self.device.reset_input_buffer()
