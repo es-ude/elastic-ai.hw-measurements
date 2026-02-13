@@ -231,13 +231,24 @@ class DeviceUnderTestHandler:
         return data_sliced
 
     # -------------------------------------------- FUNCTIONS FOR TESTING ------------------------------------------
-    def preparing_data_streaming_architecture(self, signal: np.ndarray, bit_position_start: int, is_signed: bool=False) -> bytes:
+    def preparing_data_streaming_architecture(self, signal: np.ndarray, bit_position_start: int, is_signed: bool = False) -> bytes:
         """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
         data = bytes()
         self.__device.empty_input_buffer()
         for val in signal:
-            data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=0, data=val*bit_position_start, is_signed=is_signed)
+            data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=0, data=val * bit_position_start, is_signed=is_signed)
             data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=1, data=0, is_signed=False)
+        data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
+        data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
+        return data
+
+    def preparing_data_calling_architecture(self, num_repeat: int) -> bytes:
+        """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
+        data = bytes()
+        self.__device.empty_input_buffer()
+        data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=0, data=1, is_signed=False)
+        for val in range(num_repeat):
+            data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=1, data=1, is_signed=False)
         data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
         data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
         return data
