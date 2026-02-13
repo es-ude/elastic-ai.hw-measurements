@@ -63,7 +63,7 @@ class HandlerUSB:
             parity=parity,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            inter_byte_timeout=0.5
+            inter_byte_timeout=0.1
         )
         self.device_init = True
 
@@ -95,8 +95,8 @@ class HandlerUSB:
 
     def write_wfb_hex(self, head: int, data: int) -> bytes:
         """Write content to FPGA/MCU for specific custom-made task"""
-        transmit_byte = head.to_bytes(self.__BYTES_HEAD, 'little')
-        transmit_byte += data.to_bytes(self.__BYTES_DATA, 'big')
+        transmit_byte = head.to_bytes(self.__BYTES_HEAD, byteorder='big')
+        transmit_byte += data.to_bytes(self.__BYTES_DATA, byteorder='big')
         self.device.write(transmit_byte)
         out = self.device.read(len(transmit_byte))
         return out

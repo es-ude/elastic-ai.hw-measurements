@@ -4,96 +4,90 @@
 //
 // Create Date:     19.04.2023 18:25:50
 // Copied on: 	    §{date_copy_created}
-// Module Name:     UART FIFO Module for building complete communication procotocols
+// Module Name:     UART FIFO Module for building complete communication protocols
 // Target Devices:  FPGA
-// Tool Versions:   1v0
+// Tool Versions:   1v1
 // Dependencies:    None
 //
 // State: 	        Tested!
 // Improvements:    None
-// Comments:        None
-// Parameters:      DT_BITRATE  --> Clock cycles between sampling for extracting information
+// Comments:        Little-endian transmission, but big-endian processing
+// Parameters:      FIFO_SIZE  --> Number of bytes for saving FIFO
+//                  BITWIDTH    --> BITWIDTH FOR DATA TRANSMISSION
 //////////////////////////////////////////////////////////////////////////////////
 
+
 module UART_FIFO#(
-    parameter FIFO_SIZE = 'd4
+    parameter FIFO_SIZE = 'd4,
+    parameter BITWIDTH = 'd8
 )(
-    input wire CLK,
+    input wire CLK_SYS,
     input wire RSTN,
     input wire UART_RDY_FLAG,
+    input wire START_FLAG,
     //Sliced data for UART module
-    input wire [7:0] UART_DIN,
-    output wire [7:0] UART_DOUT,
-    //Transmitted data for FPGA
-    input wire  ['d8*FIFO_SIZE-'d1:0] DATA_IN,
-    output wire ['d8*FIFO_SIZE-'d1:0] DATA_OUT,
-    //Control of FPGA modules
+    input wire [BITWIDTH-'d1:0] UART_DIN,
+    output wire [BITWIDTH-'d1:0] UART_DOUT,
     output wire UART_START_FLAG,
+    //Transmitted data for FPGA
+    input wire [BITWIDTH*FIFO_SIZE-'d1:0] FIFO_IN,
+    output reg [BITWIDTH*FIFO_SIZE-'d1:0] FIFO_OUT,
     output wire FIFO_RDY
 );
 
 localparam STATE_IDLE = 2'd0, STATE_START = 2'd1, STATE_FIFO = 2'd2, STATE_STOP = 2'd3;
 
 reg [1:0] state;
-reg [3:0] cnt_uart;
+reg int_trigger;
+reg [$clog2(FIFO_SIZE+'d1)-'d1:0] cnt_uart;
 reg [2:0] shift_uart;
-reg [7:0] uart_fifo [FIFO_SIZE-'d1:0];
-wire [7:0] data_fifo_in [FIFO_SIZE-'d1:0];
-
-assign FIFO_RDY = !state;
-assign UART_START_FLAG = (shift_uart[0] && !shift_uart[2]) && (cnt_uart != FIFO_SIZE);
-assign UART_DOUT = uart_fifo[cnt_uart];
-
-genvar i0;
-for (i0 = 0; i0 < FIFO_SIZE; i0 = i0 + 1) begin
-    assign DATA_OUT[(8*i0)+:8] = uart_fifo[i0];
-    assign data_fifo_in[i0] = DATA_IN[(8*i0)+:8];
-end
-
-integer i1;
+reg [1:0] shift_start;
 wire do_flag_pos, do_flag_neg;
-assign do_flag_pos = (UART_RDY_FLAG && !shift_uart[0]);
-assign do_flag_neg = (!shift_uart[0] && shift_uart[1]);
 
-//############################### FIFO-Controller
-always@(posedge CLK) begin
-    if(~RSTN) begin
-        shift_uart = 3'b111;
-        state = STATE_IDLE;
-        cnt_uart = 4'd0;
-        for(i1 = 'd0; i1 < FIFO_SIZE; i1 = i1 + 'd1) begin
-            uart_fifo[i1] <= 8'd0;
-        end
+assign FIFO_RDY = (state == STATE_IDLE);
+assign UART_START_FLAG = int_trigger && ((state == STATE_START) || (do_flag_pos && (cnt_uart < FIFO_SIZE-'d1)));
+assign UART_DOUT = FIFO_OUT[(FIFO_SIZE-'d1)*BITWIDTH+:'d8];
+
+assign do_flag_pos = (&shift_uart[1:0] && !shift_uart[2]);
+assign do_flag_neg = (~&shift_uart[1:0] && shift_uart[1]);
+assign do_start = (shift_start[0] && !shift_start[1]);
+
+// FIFO-Controller
+always@(posedge CLK_SYS) begin
+    if(!RSTN) begin
+        shift_uart <= 3'b111;
+        shift_start <= 2'd0;
+        state <= STATE_IDLE;
+        cnt_uart <= 'd0;
+        FIFO_OUT <= 'd0;
+        int_trigger <= 1'd0;
     end else begin
         shift_uart <= {shift_uart[1:0], UART_RDY_FLAG};
-        case(state) 
+        shift_start <= {shift_start[0], START_FLAG};
+        case(state)
             STATE_IDLE: begin
-                state <= (do_flag_neg) ? STATE_START : STATE_IDLE;
+                state <= (do_flag_neg ^ do_start) ? STATE_START : STATE_IDLE;
+                int_trigger <= do_start;
             end
-            STATE_START: begin 
+            STATE_START: begin
                 state <= STATE_FIFO;
-                for(i1 = 0; i1 < FIFO_SIZE; i1 = i1 + 'd1) begin
-                    uart_fifo[i1] <= data_fifo_in[i1];
-                end
+                FIFO_OUT <= FIFO_IN;
             end
             STATE_FIFO: begin
                 if(cnt_uart == FIFO_SIZE) begin
                     state <= STATE_STOP;
-                    cnt_uart <= 4'd0;
-                    for(i1 = 'd0; i1 < FIFO_SIZE; i1 = i1 + 'd1) begin
-                        uart_fifo[i1] <= uart_fifo[i1];
-                    end
+                    cnt_uart <= 'd0;
+                    FIFO_OUT <= FIFO_OUT;
                 end else begin
                     state <= STATE_FIFO;
-                    cnt_uart <= cnt_uart + ((do_flag_pos) ? 4'd1 : 4'd0);
-                    uart_fifo[cnt_uart] <= (do_flag_pos) ? UART_DIN : uart_fifo[cnt_uart]; 
+                    cnt_uart <= cnt_uart + ((do_flag_pos) ? 'd1 : 'd0);
+                    FIFO_OUT <= (do_flag_pos) ? {FIFO_OUT[0+:(FIFO_SIZE-'d1)*BITWIDTH], UART_DIN} : FIFO_OUT;
                 end
             end
             STATE_STOP: begin
                 state <= STATE_IDLE;
             end
-        endcase           
-    end    
+        endcase
+    end
 end
-
 endmodule

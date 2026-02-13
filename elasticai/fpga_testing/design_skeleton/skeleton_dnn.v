@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module SKELETON_NN#(
+module SKELETON_DNN#(
 	parameter BITWIDTH_IN = 5'd8,
     parameter BITWIDTH_SYS = 5'd16,
     parameter BITWIDTH_HEAD = 6'd26,
@@ -37,8 +37,10 @@ module SKELETON_NN#(
 );
 
 localparam BITWIDTH_OFFSET = BITWIDTH_SYS - BITWIDTH_IN;
-assign DATA_HEAD = {4'd7, 6'd5, 6'd3, BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
-assign DATA_OUT[0+:BITWIDTH_OFFSET] = 8'd0;
+localparam NUM_INPUT = 5, NUM_OUTPUT = 3;
+
+assign DATA_HEAD = {4'd7, NUM_INPUT[5:0], NUM_OUTPUT[5:0], BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
+assign DATA_OUT[0+:BITWIDTH_OFFSET] = 'd0;
 
 // --- DUT (JUST REPLACE HERE)
 //If using skeleton from elasticAI.creator please include shift, otherwise software API does not work!

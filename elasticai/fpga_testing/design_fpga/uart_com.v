@@ -2,85 +2,79 @@
 // Company:         University of Duisburg-Essen, Intelligent Embedded Systems Lab
 // Engineer:        AE
 //
-// Create Date:     09.09.2018 16:50:10
+// Create Date:     14:15:47 03/05/2019 
 // Copied on: 	    §{date_copy_created}
 // Module Name:     UART Physical Implementation 
 // Target Devices:  FPGA
-// Tool Versions:   1v0
-// Processing:      Oversampling the RX/TX lines for protocol handling 
+// Tool Versions:   1v1
+// Processing:      Oversampling the RX/TX lines for protocol handling (LSB first)
 // Dependencies:    None
 //
-// State: 	        Tested!
+// State: 	        Works on hardware!
 // Improvements:    None
 // Comments:        None
-// Parameters:      DT_BITRATE  --> Clock cycles between sampling for extracting information
+// Parameters:      BITRATE     --> Factor for building the BAUDRATE
+//                  BITWIDTH    --> BITWIDTH FOR DATA TRANSMISSION
+//                  NSAMP       --> Oversampling ratio of UART input
 //////////////////////////////////////////////////////////////////////////////////
-// Calculating the variable: DT_BITRATE = f_sys/(n* BAUDRATE) -1, mit f_sys = 100 MHz (=Sampling rate)
-// Example #1: BAUDRATE = 115.200 (n = 4) --> 216
-// Example #2: BAUDRATE = 115.200 (n = 4) --> 216
-// Example #3: BAUDRATE = 921.600 (n = 4) --> 26
+// Calculating the variable: cntCYC = f_sys/(n* BAUDRATE), mit f_sys = 100 MHz (=Sampling rate)
+// Example #1: BAUDRATE = 115.200 (n = 4) --> 217
+// Example #2: BAUDRATE = 921.600 (n = 4) --> 27
 
 
 module UART_COM#(
-	parameter DT_BITRATE = 'd26
+    parameter BITRATE = 'd26,
+    parameter BITWIDTH = 'd8,
+    parameter NSAMP = 'd4
 )(
-    input wire CLK,
+    input wire CLK_SYS,
     input wire RSTN,
-    input wire start_flag,
     // --- Communication signals (from external device)
     input wire RX,
     output reg TX,
     // --- Controlling the Middleware / FIFO buffer (FPGA internal)
-    input wire [7:0] DATA_TX,
-    output wire [7:0] DATA_RX,
-    output wire DATA_RDY,
-    output wire MOD_RDY
+    input wire UART_START_FLAG,
+    input wire [BITWIDTH-'d1:0] UART_DIN,
+    output reg [BITWIDTH-'d1:0] UART_DOUT,
+    output wire UART_RDY
 );
-    
-    localparam UART_NSAMP = 3'd3;
     localparam STATE_IDLE = 2'd0, STATE_START = 2'd1, STATE_RW = 2'd2, STATE_STOP = 2'd3;
     
     reg [1:0] state;
-    reg [7:0] bufferUART;
-    reg [3:0] bit_transfer;
-    
-    reg [2:0] valRX;
-    reg [$clog2(DT_BITRATE)-'d1:0] cnt_dt;
-    reg [2:0] cnt_ovs;
+    reg [BITWIDTH-'d1:0] bufferUART;
+    reg [$clog2(BITWIDTH)+'d1:0] bit_transfer;
+    reg [$clog2(NSAMP)-'d1:0] valRX, cnt_ovs;
+    reg [$clog2(BITRATE)-'d1:0] cnt_dt;
     wire ovs_done_flag, cnt_done_flag, uart_done_flag;
-    
-    assign DATA_RX = (RSTN && DATA_RDY) ? bufferUART : 8'd0;
 
-    assign MOD_RDY = (state == STATE_IDLE) && RSTN;
-    assign DATA_RDY = (state == STATE_STOP || state == STATE_IDLE) && RSTN;
+    assign UART_RDY = (state == STATE_IDLE);
+    assign cnt_done_flag = (cnt_dt == BITRATE-'d1);
+    assign ovs_done_flag = (cnt_ovs == NSAMP-'d1);
+    assign uart_done_flag = (bit_transfer == BITWIDTH);
     
-    assign cnt_done_flag = (cnt_dt == DT_BITRATE);
-    assign ovs_done_flag = (cnt_ovs == UART_NSAMP);
-    assign uart_done_flag = (bit_transfer == 4'd8);
-    
-    always@(posedge CLK) begin
-        if(~RSTN) begin
-            bufferUART <= 8'd0;
+    always@(posedge CLK_SYS) begin
+        if(!RSTN) begin
+            bufferUART <= 'd0;
+            UART_DOUT <= 'd0;
             state <= STATE_IDLE;
             cnt_dt <= 'd0;
-            cnt_ovs <= 3'd0;
-            bit_transfer <= 4'd0;
+            cnt_ovs <= 'd0;
+            bit_transfer <= 'd0;
             TX <= 1'd1;
-            valRX <= 3'd0;
+            valRX <= 'd0;
         end else begin
             case(state)
-                //Warten bis Nachricht oder 
                 STATE_IDLE: begin
-                    state <= (start_flag || !RX) ? STATE_START : STATE_IDLE;
+                    state <= (UART_START_FLAG || !RX) ? STATE_START : STATE_IDLE;
                 end
-                //Senden des Start-Bits
                 STATE_START: begin
                     TX <= 1'd0;
+                    bufferUART <= UART_DIN;
                     if(cnt_done_flag) begin
                         cnt_dt <= 'd0;
-                        cnt_ovs <= (ovs_done_flag) ? 3'd0 : cnt_ovs + 3'd1;
+                        cnt_ovs <= (ovs_done_flag) ? 'd0 : cnt_ovs + 'd1;
                         state <= (ovs_done_flag) ? STATE_RW : STATE_START;
-                        bit_transfer <= bit_transfer + ((ovs_done_flag) ? 4'd1 : 4'd0); 
+                        bit_transfer <= bit_transfer + ((ovs_done_flag) ? 'd1 : 'd0);
                     end else begin
                         cnt_dt <= cnt_dt + 'd1;
                         cnt_ovs <= cnt_ovs;
@@ -88,16 +82,15 @@ module UART_COM#(
                         bit_transfer <= bit_transfer;
                     end
                 end
-                //Datentransfer mit 4-facher Abtastung
                 STATE_RW: begin
-                    TX <= DATA_TX[bit_transfer-4'd1];
+                    TX <= bufferUART[0];
                     if(cnt_done_flag) begin
                         cnt_dt <= 'd0;
-                        cnt_ovs <= (ovs_done_flag) ? 3'd0 : cnt_ovs + 3'd1;
+                        cnt_ovs <= (ovs_done_flag) ? 'd0 : cnt_ovs + 'd1;
                         state <= (uart_done_flag && ovs_done_flag) ? STATE_STOP : STATE_RW; 
-                        bit_transfer <= bit_transfer + ((ovs_done_flag) ? 4'd1 : 4'd0);
-                        valRX <= (ovs_done_flag) ? 3'd0 : valRX + RX;
-                        bufferUART <= (ovs_done_flag) ? {valRX[1], bufferUART[7:1]} : bufferUART;
+                        bit_transfer <= bit_transfer + ((ovs_done_flag) ? 'd1 : 'd0);
+                        valRX <= (ovs_done_flag) ? 'd0 : valRX + RX;
+                        bufferUART <= (ovs_done_flag) ? {valRX[1], bufferUART[BITWIDTH-'d1:1]} : bufferUART;
                     end else begin
                         cnt_dt <= cnt_dt + 'd1;
                         cnt_ovs <= cnt_ovs;
@@ -107,18 +100,19 @@ module UART_COM#(
                         bufferUART <= bufferUART;
                     end
                 end
-                //UART beenden mit dem Stop-Bit
                 STATE_STOP: begin
                     TX <= 1'd1;
                     if(cnt_done_flag) begin
                         cnt_dt <= 'd0;
-                        cnt_ovs <= (ovs_done_flag) ? 3'd0 : cnt_ovs + 3'd1;
-                        state <= (ovs_done_flag) ? STATE_IDLE : STATE_STOP;  
-                        bit_transfer <= 4'd0;
+                        cnt_ovs <= (ovs_done_flag) ? 'd0 : cnt_ovs + 'd1;
+                        state <= (ovs_done_flag) ? STATE_IDLE : STATE_STOP;
+                        UART_DOUT <= bufferUART;
+                        bit_transfer <= 'd0;
                     end else begin
                         cnt_dt <= cnt_dt + 'd1;
                         cnt_ovs <= cnt_ovs;
                         state <= STATE_STOP;
+                        UART_DOUT <= UART_DOUT;
                         bit_transfer <= bit_transfer;
                     end
                 end  

@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module SKELETON_RAM_0#(
+module SKELETON_RAM#(
     parameter BITWIDTH_IN = 5'd12,
     parameter BITWIDTH_SYS = 5'd16,
     parameter BITWIDTH_HEAD = 6'd26,
@@ -54,7 +54,7 @@ BRAM_SINGLE#(
 ) DUT (
     .CLK_RAM(CLK_SYS),
     .EN(EN && RSTN),
-    .WE(RnW),
+    .WE(RnW && TRGG_START_CALC),
     .ADR(ADR),
     .DIN(ram_din),
     .DOUT(ram_dout)

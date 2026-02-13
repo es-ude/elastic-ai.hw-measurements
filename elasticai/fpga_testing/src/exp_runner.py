@@ -11,16 +11,13 @@ from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
 
 @dataclass
 class ExperimentSettings:
-    """Class for handling the experiment"""
+    """Class for handling the experiment
+    Attributes:
+        com_port:       String with COM port name
+        selected_dut:   List with DUT numbers for testing
+    """
     com_port: str
-    using_mcu: bool
     selected_dut: list
-
-DefaultSettings = ExperimentSettings(
-    com_port=scan_available_serial_ports()[0],
-    using_mcu=False,
-    selected_dut=[0, 1]
-)
 
 
 class ExperimentMain:
@@ -40,6 +37,10 @@ class ExperimentMain:
         Returns:
             None
         """
+        DefaultSettings = ExperimentSettings(
+            com_port=scan_available_serial_ports()[0],
+            selected_dut=[0, 1]
+        )
         yaml_data = YamlConfigHandler(
             yaml_template=DefaultSettings,
             path2yaml='config',
@@ -49,7 +50,7 @@ class ExperimentMain:
         self._settings = yaml_data.get_class(ExperimentSettings)
         self.__device_buf = buffer_size
 
-        self._device = DeviceUnderTestHandler(self._settings.com_port, self.__device_buf, ~self._settings.using_mcu)
+        self._device = DeviceUnderTestHandler(self._settings.com_port, self.__device_buf)
 
     @property
     def get_path2run(self) -> str:

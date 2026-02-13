@@ -8,7 +8,7 @@ module TEST_ENVIRONMENT#(
     input wire CLK,
     input wire RSTN,
     input wire START_FLAG,
-    input wire [$clog2(NUM_DUT)-'d1:0] SEL,
+    input wire [$clog2(NUM_DUT):0] SEL,
     input wire [BITWIDTH_ADR-'d1:0] ADR,
     input wire RnW,
     input wire [BITWIDTH_DATA-'d1:0] DATA_IN,
@@ -19,10 +19,10 @@ module TEST_ENVIRONMENT#(
 
     localparam BITWIDTH_HEAD = NUM_BITS_HEADER - 'd6;
     //################## CONTROL LINES ################## 
-    wire [BITWIDTH_DATA-'d1:0] dout [NUM_DUT-'d1:0];
+    wire [BITWIDTH_DATA-'d1:0] dout [NUM_DUT:0];
     assign DATA_OUT = dout[SEL]; 
 
-    wire [NUM_DUT-'d1:0] rdy_filt;
+    wire [NUM_DUT:0] rdy_filt;
     assign RDY_FLAG = rdy_filt[SEL];
     
     //* This variable contains information about the module for read-in in Python 
@@ -32,43 +32,48 @@ module TEST_ENVIRONMENT#(
     //  - NUM_OUTPUTS (6-bits):     Number of used outputs
     //  - BITWIDTH_IN (5-bits):     Bitwidth of input data
     //  - BITWIDTH_OUT (5-bits):    Bitwidth of output data
-    wire [NUM_BITS_HEADER-'d7:0] head_array [NUM_DUT-'d1:0];
+    wire [NUM_BITS_HEADER-'d7:0] head_array [NUM_DUT:0];
     assign HEAD_INFO = {NUM_DUT[5:0], head_array[SEL]};
-   
+    
+    assign dout[0] = 'd0123;
+    assign head_array[0] = {4'd0, 6'd0, 6'd1, 5'd0, BITWIDTH_DATA[4:0]};
+    assign rdy_filt[0] = 1'd0; 
+
+    // SEL == 'd0 will be skipped!
     //################## List with DUT ################## 
-    SKELETON_ECHO_0#(BITWIDTH_DATA, BITWIDTH_HEAD) DUT0(
+    SKELETON_ECHO#(BITWIDTH_DATA, BITWIDTH_HEAD) DUT0(
         .CLK_SYS(CLK),
         .RSTN(RSTN),
-        .EN(SEL == 'd0),
+        .EN(SEL == 'd1),
         .TRGG_START_CALC(START_FLAG),
         .DATA_IN(DATA_IN),
-        .DATA_OUT(dout[0]),
-        .DATA_HEAD(head_array[0]),
-        .DATA_VALID(rdy_filt[0])
+        .DATA_OUT(dout[1]),
+        .DATA_HEAD(head_array[1]),
+        .DATA_VALID(rdy_filt[1])
     );    
         
-    SKELETON_ROM_0#('d16, BITWIDTH_DATA, BITWIDTH_HEAD) DUT1(
-        .CLK_SYS(CLK),
-        .RSTN(RSTN),
-		.EN(SEL == 'd1),
-		.TRGG_START_CALC(START_FLAG),
-		.DATA_IN(DATA_IN),
-		.DATA_OUT(dout[1]),
-		.DATA_HEAD(head_array[1]),
-		.RDY(rdy_filt[1])
-    );  
-    
-    SKELETON_RAM_0#('d16, BITWIDTH_DATA, BITWIDTH_HEAD, BITWIDTH_ADR) DUT2(
+    SKELETON_ROM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD) DUT1(
         .CLK_SYS(CLK),
         .RSTN(RSTN),
 		.EN(SEL == 'd2),
 		.TRGG_START_CALC(START_FLAG),
-		.RnW(RnW),
-		.ADR(ADR),
 		.DATA_IN(DATA_IN),
 		.DATA_OUT(dout[2]),
 		.DATA_HEAD(head_array[2]),
-		.RDY(rdy_filt[2])    
+		.RDY(rdy_filt[2])
+    );  
+    
+    SKELETON_RAM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD, BITWIDTH_ADR) DUT2(
+        .CLK_SYS(CLK),
+        .RSTN(RSTN),
+		.EN(SEL == 'd3),
+		.TRGG_START_CALC(START_FLAG),
+		.RnW(RnW),
+		.ADR(ADR),
+		.DATA_IN(DATA_IN),
+		.DATA_OUT(dout[3]),
+		.DATA_HEAD(head_array[3]),
+		.RDY(rdy_filt[3])    
     );  
         
 endmodule

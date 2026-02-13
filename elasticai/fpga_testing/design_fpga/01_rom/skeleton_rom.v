@@ -17,7 +17,7 @@
 //                  BITWIDTH_HEAD   --> Bitwidth of metadata (skeleton properties)
 //////////////////////////////////////////////////////////////////////////////////
 
-module SKELETON_ROM_0#(
+module SKELETON_ROM#(
     parameter BITWIDTH_IN = 5'd16,
     parameter BITWIDTH_SYS = 5'd16,
     parameter BITWIDTH_HEAD = 6'd26

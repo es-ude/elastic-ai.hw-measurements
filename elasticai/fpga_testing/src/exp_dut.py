@@ -1,16 +1,25 @@
 import numpy as np
-from time import sleep
+from dataclasses import dataclass
+from elasticai.fpga_testing.src.interface_serial import HandlerUSB, scan_available_serial_ports
 
-from .interface_serial import HandlerUSB, scan_available_serial_ports
+
+@dataclass
+class ConfigurationDUT:
+    bitwidth_input: int
+    bitwidth_output: int
+    dut_type: int
+    num_duts: int
+    num_outputs: int
+    num_inputs: int
 
 
 class DeviceUnderTestHandler:
-    def __init__(self, com_port: str, buffer_size:int=10, using_fpga_target: bool=True) -> None:
+    def __init__(self, com_port: str, buffer_size:int=10, baudrate: int=115200) -> None:
         """Class for handling the FPGA for testing different digital accelerators (enabling System-Tests)
         Args:
             com_port:       String with COM Port / device name
             buffer_size:    Number of packet bytes for collecting data for serial communication in each way [Default: 10]
-            using_fpga_target: If true, use FPGA target for testing else MCU Pico [Default: True]
+            baudrate:       Integer with Baudrate for UART communication [Default: 115.200]
         :returns:
             None
         """
@@ -22,11 +31,14 @@ class DeviceUnderTestHandler:
         self.__bytes_frame_data = int(self.__bitwidth_data / 8)
         self.__bytes_frame_total = self.__bytes_frame_head + self.__bytes_frame_data
         self.__buffer_size = buffer_size
-        self.__led_state = False
-        self.__device = HandlerUSB(com_port, baud=115200, buffer_bytesize=self.__bytes_frame_total)
+        self.__device = HandlerUSB(
+            com_name=com_port,
+            baud=baudrate,
+            buffer_bytesize=self.__bytes_frame_total
+        )
 
         # --- Protocol Header
-        self.__START_SLICING_POSITION = 3 if using_fpga_target else 2
+        self.__START_SLICING_POSITION = 3
         self.__REG_DUT_CNTRL = 0
         self.__REG_DUT_WR = 1
         self.__REG_DUT_RD = 2
@@ -60,8 +72,10 @@ class DeviceUnderTestHandler:
 
     def open_serial(self) -> None:
         """Open a serial communication to device"""
-        if not self.__device.com_port_active:
-            self.__device.open()
+        if self.__device.com_port_active:
+            self.__device.close()
+        self.__device.open()
+
 
     def close_serial(self) -> None:
         """Close a serial communication from device"""
@@ -70,37 +84,55 @@ class DeviceUnderTestHandler:
 
     # --------------------------------------- FUNCTIONS FOR HANDLING DEVICE ---------------------------------
     def select_device_for_testing(self, device_id: int) -> None:
-        """Function for selecting the Device under Test (DUT) on target device"""
+        """Function for selecting the Device under Test (DUT) on target device
+        :return:        None
+        """
         data = self.data_to_hex(self.__REG_DUT_CNTRL, 2, device_id, False)
         self.__device.write_wofb(data)
 
-    def do_led_control(self, led_state: bool) -> None:
-        """Controlling the LED on FPGA using led_state"""
-        self.__led_state = led_state
-        data = self.data_to_hex(self.__REG_DUT_CNTRL, 4, 0, False)
+    def do_led_control(self, state: bool) -> None:
+        """Controlling the LED on FPGA using led_state
+        :param state:    State of the LED
+        :return:        None
+        """
+        data = self.data_to_hex(self.__REG_DUT_CNTRL, 4, int(state), False)
         self.__device.write_wofb(data)
 
     def do_led_toggle(self) -> None:
-        """Toggling the LED on Board"""
-        self.__led_state = ~self.__led_state
-        self.do_led_control(self.__led_state)
+        """Toggling the LED on Board
+        :return:        None
+        """
+        data = self.data_to_hex(self.__REG_DUT_CNTRL, 8, 0, False)
+        self.__device.write_wofb(data)
+
+    def do_test_trial(self) -> None:
+        """Starting test trial on selected dut
+        :return:        None
+        """
+        data = self.data_to_hex(self.__REG_DUT_CNTRL, 1, 0, False)
+        self.__device.write_wfb(data)
 
     def do_inference(self, data: bytes) -> bytes:
-        """Doing the inference from Computer to FPGA with sending data frame"""
+        """Doing the inference from Computer to FPGA with sending data frame
+        :return:        Bytes with data from board
+        """
         return self.__device.write_wfb(data)
 
     def do_inference_delay(self, num_cycles:int=2) -> bytes:
-        """Doing the inference from Computer to FPGA just to get last samples from experiment"""
+        """Doing the inference from Computer to FPGA just to get last samples from experiment
+        :return:        Bytes with data from board
+        """
         result = bytes()
         for cycle in range(num_cycles):
             result += self.__device.write_wfb_hex(0, 0)
         return result
 
     # --------------------------------------- FUNCTIONS FOR GETTING HEADER INFORMATION ---------------------------------
-    def get_dut_config(self, sel_target: int) -> dict:
+    def get_dut_config(self, sel_target: int) -> ConfigurationDUT:
         """Function for calling the header configuration of implemented device on target device"""
+        self.__device.device.reset_input_buffer()
         data_send = bytes()
-        data_send += self.data_to_hex(self.__REG_DUT_CNTRL, 2, sel_target, False)
+        data_send += self.data_to_hex(self.__REG_DUT_CNTRL, 2, sel_target<<1, False)
         data_send += self.data_to_hex(self.__REG_DUT_HEAD, 1, False)
         data_send += self.data_to_hex(self.__REG_DUT_HEAD, 0, False)
         data_send += self.data_to_hex(0, 0, False)
@@ -109,19 +141,18 @@ class DeviceUnderTestHandler:
         data_head = bytes()
         for data in data_fb0:
             data_head += data[1:]
-        return self.__process_dut_config(int.from_bytes(data_head, 'big'))
+        return self.__process_dut_config(int.from_bytes(data_head, byteorder='big'))
 
     @staticmethod
-    def __process_dut_config(data: int) -> dict:
-        config_data = {
-            'num_duts': (data & 0xFC00_0000) >> 26,
-            'dut_type': (data & 0x03C0_0000) >> 22,
-            'num_input': (data & 0x003F_0000) >> 16,
-            'num_output': (data & 0x0000_FC00) >> 10,
-            'bit_input': (data & 0x0000_03E0) >> 5,
-            'bit_output': (data & 0x0000_001F) >> 0,
-        }
-        return config_data
+    def __process_dut_config(data: int) -> ConfigurationDUT:
+        return ConfigurationDUT(
+            num_duts=(data & 0xFC00_0000) >> 26,
+            dut_type=(data & 0x03C0_0000) >> 22,
+            num_inputs=(data & 0x003F_0000) >> 16,
+            num_outputs=(data & 0x0000_FC00) >> 10,
+            bitwidth_input=(data & 0x0000_03E0) >> 5,
+            bitwidth_output=(data & 0x0000_001F) >> 0,
+        )
 
     def get_dut_config_all(self, print_results: bool = True) -> dict:
         """Loading the header information of each implemented test device (skeleton) on target device
@@ -155,7 +186,7 @@ class DeviceUnderTestHandler:
             is_signed:  Signed data structure
         """
         head = int(bin(reg)[2:].zfill(self.__bitwidth_cmds) + bin(adr)[2:].zfill(self.__bitwidth_adr), 2)
-        out = head.to_bytes(self.__bytes_frame_head, 'little')
+        out = head.to_bytes(self.__bytes_frame_head, 'big')
         out0 = int(data).to_bytes(self.__bytes_frame_data, 'big', signed=is_signed)
         return out + out0
 
@@ -205,7 +236,43 @@ class DeviceUnderTestHandler:
         """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
         data = bytes()
         for val in signal:
-            data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=1, data=val*bit_position_start, is_signed=is_signed)
+            data += self.data_to_hex(
+                reg=self.__REG_DUT_CNTRL,
+                adr=1,
+                data=val*bit_position_start,
+                is_signed=is_signed
+            )
+        return data
+
+    def preparing_data_memory_write_architecture(self, signal: np.ndarray, adr_start: int, bit_position_start: int,
+                                                 is_signed: bool = False) -> bytes:
+        """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
+        data = self.data_to_hex(
+            reg=self.__REG_DUT_CNTRL,
+            adr=2,
+            data=2,
+            is_signed=is_signed
+        )
+        for ite, val in enumerate(signal):
+            data += self.data_to_hex(
+                reg=self.__REG_DUT_WR,
+                adr=adr_start + ite,
+                data=val * bit_position_start,
+                is_signed=is_signed
+            )
+        return data
+
+    def preparing_data_memory_read_architecture(self, signal: np.ndarray, adr_start: int, bit_position_start: int,
+                                              is_signed: bool=False) -> bytes:
+        """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
+        data = bytes()
+        for ite, val in enumerate(signal):
+            data += self.data_to_hex(
+                reg=self.__REG_DUT_RD,
+                adr=adr_start+ite,
+                data=val*bit_position_start,
+                is_signed=is_signed
+            )
         return data
 
     def preparing_data_creator_architecture(self, signal: list, num_input_layer: int, num_output_layer: int,
@@ -260,18 +327,3 @@ class DeviceUnderTestHandler:
         for idx in range(length):
             data += self.data_to_hex(reg=self.__REG_DUT_RD, adr=idx, data=0, is_signed=False)
         return data
-
-
-
-if __name__ == "__main__":
-    scan_available_serial_ports()
-    fpga_dut = DeviceUnderTestHandler('COM7')
-
-    fpga_dut.open_serial()
-    for idx in range(20):
-        # fpga_dut.do_led_toggle()
-        sleep(0.25)
-        data = fpga_dut.get_dut_config_all()
-
-    fpga_dut.do_led_control(False)
-    fpga_dut.close_serial()
