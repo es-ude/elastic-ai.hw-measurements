@@ -28,7 +28,7 @@ DefaultSettingsRxM = SettingsRxM(
 )
 
 
-class ExperimentROM(ExperimentMain):
+class ExperimentRxM(ExperimentMain):
     _device: DeviceUnderTestHandler
     __settings_rom: SettingsRxM
     __data_scaling_value: int
@@ -53,11 +53,11 @@ class ExperimentROM(ExperimentMain):
 
     @property
     def get_adrwidth_structure(self) -> int:
-        return int(np.ceil(np.log2(self.__header['num_output'])))
+        return int(np.ceil(np.log2(self.__header.num_outputs)))
 
     @property
     def get_bitwidth_structure(self) -> int:
-        return self.__header['bit_output']
+        return self.__header.bitwidth_output
 
     @property
     def get_settings_func(self) -> SettingsRxM:
@@ -73,12 +73,9 @@ class ExperimentROM(ExperimentMain):
 
     def preprocess_rom_data(self, num_samples: int) -> None:
         """Preprocessing the data in order to have the data stream suitable for tested device (hex and data frame)"""
-        waveform_ana = np.zeros((num_samples, ), dtype=np.int32) + 1
         self._buffer_data_send = self._device.slice_data_for_transmission(
-            self._device.preparing_data_streaming_architecture(
-                signal=waveform_ana,
-                bit_position_start=self.__data_scaling_value,
-                is_signed=self.__settings_rom.signed_rom
+            self._device.preparing_data_calling_architecture(
+                num_repeat=num_samples
             )
         )
 
@@ -122,7 +119,7 @@ def run_rom_test_on_target(device_id: int, block_plot: bool=False) -> None:
     :return: None
     """
     # --- Preparing Test
-    exp0 = ExperimentROM(device_id=device_id, use_ram=False)
+    exp0 = ExperimentRxM(device_id=device_id, use_ram=False)
     settings_test = exp0.get_settings
     settings_rom = exp0.get_settings_func
 
@@ -148,7 +145,7 @@ def run_ram_test_on_target(device_id: int, block_plot: bool=False) -> None:
     :return: None
     """
     # --- Preparing Test
-    exp0 = ExperimentROM(device_id=device_id, use_ram=True)
+    exp0 = ExperimentRxM(device_id=device_id, use_ram=True)
     settings_test = exp0.get_settings
     settings_rom = exp0.get_settings_func
 

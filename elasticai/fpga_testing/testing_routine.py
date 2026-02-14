@@ -3,7 +3,7 @@ from elasticai.fpga_testing.testcase import (
     run_echo_on_target,
     run_filter_on_target,
     run_inference_on_target,
-    run_mult_on_target,
+    run_math_on_target,
     run_ram_test_on_target,
     run_rom_test_on_target,
 )
@@ -24,19 +24,19 @@ def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> 
             case 0:
                 run_echo_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 1:
-                run_mult_on_target(device_id=used_skeleton, block_plot=do_plot)
-            case 2:
-                raise NotImplementedError
-            case 3:
                 run_rom_test_on_target(device_id=used_skeleton, block_plot=do_plot)
-            case 4:
+            case 2:
                 run_ram_test_on_target(device_id=used_skeleton, block_plot=do_plot)
-            case 5:
+            case 3:
+                run_math_on_target(device_id=used_skeleton, block_plot=do_plot)
+            case 4:
                 run_filter_on_target(device_id=used_skeleton, block_plot=do_plot)
+            case 5:
+                raise NotImplementedError("Test Code for Event-Detection and Windowing is not implemented")
             case 6:
-                raise NotImplementedError
-            case 7:
                 run_inference_on_target(device_id=used_skeleton, block_plot=do_plot)
+            case 7:
+                raise NotImplementedError("Test Code for End-To-End Processors is not implemented")
 
 
 if __name__ == "__main__":

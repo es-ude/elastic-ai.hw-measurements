@@ -26,7 +26,7 @@ class HandlerUSB:
         :param buffer_bytesize: Integer with buffer size
         :return: None
         """
-        self.SerialName = com_name
+        self.SerialName = com_name if not com_name == "AUTOCOM" else scan_available_serial_ports()[0]
         self.SerialBaud = baud
         self.SerialParity = 0
 

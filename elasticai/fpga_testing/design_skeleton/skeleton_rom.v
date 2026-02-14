@@ -39,13 +39,13 @@ wire [BITWIDTH_IN-'d1:0] dout_rom;
 assign DATA_OUT = {dout_rom, {BITWIDTH_OFFSET{1'd0}}};
 
 wire din_rom;
-assign din_rom = &DATA_IN;
+assign din_rom = |DATA_IN && EN;
 
 // --- DUT INTEGRATION (JUST REPLACE HERE)
 LUT_WVF_GEN0 DUT(
     .CLK_SYS(CLK_SYS),
     .nRST(RSTN),
-    .EN(EN),
+    .EN(din_rom),
     .TRGG_CNT_FLAG(TRGG_START_CALC),
     .LUT_VALUE(dout_rom),
     .LUT_END(RDY)

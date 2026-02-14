@@ -5,7 +5,7 @@ from time import time_ns
 from tqdm import tqdm
 
 from elasticai.fpga_testing.src.helper import get_path_to_project
-from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler, scan_available_serial_ports
+from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
 from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
 
 
@@ -38,8 +38,8 @@ class ExperimentMain:
             None
         """
         DefaultSettings = ExperimentSettings(
-            com_port=scan_available_serial_ports()[0],
-            selected_dut=[0, 1]
+            com_port="AUTOCOM",
+            selected_dut=[1, 2]
         )
         yaml_data = YamlConfigHandler(
             yaml_template=DefaultSettings,
@@ -95,7 +95,6 @@ class ExperimentMain:
                 pbar.set_description(f"Processing")
                 self._buffer_data_get += self._device.do_inference(data)
             process_duration = time_ns() - process_duration
-
             # --- Delay for getting last samples
             self._buffer_data_get += self._device.do_inference_delay(self._device.get_slicing_position)
         else:

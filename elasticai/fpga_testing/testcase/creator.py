@@ -6,6 +6,7 @@ from elasticai.creator.arithmetic import FxpArithmetic, FxpParams
 from elasticai.creator.nn import Sequential
 from elasticai.creator.nn.fixed_point import Linear
 
+from elasticai.fpga_testing import get_path_to_project
 from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
 from elasticai.fpga_testing.src.exp_runner import ExperimentMain
 from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
@@ -104,21 +105,21 @@ class ExperimentCreator(ExperimentMain):
         set.model_bitwidth = self.get_bitwidth_creator
         set.num_samples_input = self.get_num_input_creator
         set.num_samples_output = self.get_num_output_creator
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_DNN{device_id:03d}', start_folder='python')
+        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_DNN{device_id:03d}', start_folder=get_path_to_project())
         self.__settings_dnn = yaml_handler.get_class(SettingsCreator)
         self.__data_scaling_value = 2 ** (self._device.get_bitwidth_data - self.__settings_dnn.model_bitwidth)
 
     @property
     def get_bitwidth_creator(self) -> int:
-        return self.__header['bit_input']
+        return self.__header.bitwidth_input
 
     @property
     def get_num_input_creator(self) -> int:
-        return self.__header['num_input']
+        return self.__header.num_inputs
 
     @property
     def get_num_output_creator(self) -> int:
-        return self.__header['num_output']
+        return self.__header.num_outputs
 
     @property
     def get_settings_func(self):
@@ -140,7 +141,7 @@ class ExperimentCreator(ExperimentMain):
         self.__preprocess_read_skeleton_id()
         self.do_inference(device_id)
         id_list = self.__postprocess_read_skeleton_id()
-        return int.from_bytes(bytes(id_list), 'big')
+        return int.from_bytes(bytes(id_list), byteorder='big')
 
 
     def preprocess_model_data(self, data_input: Tensor) -> None:

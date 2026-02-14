@@ -18,7 +18,7 @@ def copy_design_files(dest: Path) -> None:
 
 
 def copy_skeleton(name: str, dest: Path) -> None:
-    if name.lower() not in ["dnn", "echo", "filter", "math_fast", "math_slow", "ram", "rom"]:
+    if name.lower() not in ["dnn", "echo", "filter", "math", "ram", "rom"]:
         raise ValueError(f"{name} is not a valid skeleton name")
 
     import elasticai.fpga_testing as dut

@@ -108,13 +108,6 @@ def run_echo_on_target(device_id: int, block_plot: bool=False) -> None:
     plot_transient(t0=time0, xin=data_used, xout=data_out, path=exp0.get_path2run, block_plot=block_plot, is_echo_test=True)
 
 
-if __name__ == '__main__':
-    run_echo_on_target(
-        device_id=0,
-        block_plot=True
-    )
-
-
 def plot_transient(t0: np.ndarray, xin: np.ndarray, xout: np.ndarray, path: str='', fsig: float=0.0, block_plot: bool=False, is_echo_test: bool=False) -> None:
     """Plotting the transient signals
     Args:

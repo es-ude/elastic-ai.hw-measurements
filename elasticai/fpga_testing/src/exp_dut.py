@@ -1,6 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
-from elasticai.fpga_testing.src.interface_serial import HandlerUSB, scan_available_serial_ports
+from elasticai.fpga_testing.src.interface_serial import HandlerUSB
 
 
 @dataclass
@@ -14,7 +14,7 @@ class ConfigurationDUT:
 
 
 class DeviceUnderTestHandler:
-    def __init__(self, com_port: str, buffer_size:int=10, baudrate: int=115200) -> None:
+    def __init__(self, com_port: str="AUTOCOM", buffer_size:int=10, baudrate: int=115200) -> None:
         """Class for handling the FPGA for testing different digital accelerators (enabling System-Tests)
         Args:
             com_port:       String with COM Port / device name

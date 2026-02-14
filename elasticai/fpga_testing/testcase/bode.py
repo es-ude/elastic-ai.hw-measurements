@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from scipy import signal as scft
 from scipy.signal import find_peaks
 
+from elasticai.fpga_testing import get_path_to_project
 from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
 from elasticai.fpga_testing.src.exp_runner import ExperimentMain
 from elasticai.fpga_testing.src.plotting import get_color_plot, save_figure
@@ -69,13 +70,13 @@ class ExperimentBode(ExperimentMain):
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsBode
         set.bitwidth_filter = self.get_bitwidth_filter
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_Bode{device_id:03d}', start_folder='python')
+        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_Bode{device_id:03d}', start_folder=get_path_to_project())
         self.__settings_bode = yaml_handler.get_class(SettingsBode)
         self.__data_scaling_value = 2 ** (self._device.get_bitwidth_data - self.__settings_bode.bitwidth_filter)
 
     @property
     def get_bitwidth_filter(self) -> int:
-        return self.__header['bit_output']
+        return self.__header.bitwidth_output
 
     @property
     def get_settings_func(self) -> SettingsBode:
@@ -162,8 +163,8 @@ class ExperimentBode(ExperimentMain):
 
         # Converting signals to metric
         dly = np.mean(np.array(dly0))
-        phase = 360 * dly * f_sig / self.__settings_bode.sampling_rate
-        gain = 20 * np.log10((out_max - out_min) / (in_max - in_min))
+        phase = float(360 * dly * f_sig / self.__settings_bode.sampling_rate)
+        gain = float(20 * np.log10((out_max - out_min) / (in_max - in_min)))
 
         return gain, phase
 
