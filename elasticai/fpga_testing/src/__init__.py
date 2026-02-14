@@ -1,4 +1,8 @@
-from .copy_design import copy_design_files, copy_skeleton
+from .copy_design import (
+    copy_design_files,
+    copy_skeleton,
+    copy_vivado_implementation_results
+)
 from .exp_dut import (
     ConfigurationDUT,
     DeviceUnderTestHandler
