@@ -29,7 +29,7 @@
 // ------------------------------- DATA FRAME -----------------------------------------------------------------------
 
 module UART_MIDDLEWARE#(
-    parameter NUM_DUT = 6'd3,
+    parameter NUM_DUT = 6'd4,
     parameter FIFO_SIZE = 5'd3,
     parameter BITWIDTH = 5'd8,
     parameter BITWIDTH_CMDS = 5'd2,

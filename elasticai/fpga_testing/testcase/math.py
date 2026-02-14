@@ -58,7 +58,7 @@ class ExperimentMult(ExperimentMain):
         set = DefaultSettingsMult
         set.input_size = self.get_num_input_structure
         set.bitwidth_data = self.get_bitwidth_input_structure
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_Mult{device_id:03d}', start_folder=get_path_to_project())
+        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_{device_id:03d}_Math', start_folder=get_path_to_project())
         self.__settings_mult = yaml_handler.get_class(SettingsMult)
         self.__data_scaling_input = 2 ** (self._device.get_bitwidth_data - self.get_bitwidth_input_structure)
         self.__data_scaling_output = 2 ** (self._device.get_bitwidth_data - self.get_bitwidth_output_structure)
@@ -121,7 +121,6 @@ class ExperimentMult(ExperimentMain):
 def run_math_on_target(device_id: int, block_plot: bool=False) -> None:
     """Function for running the echo server test on target device
     :param device_id:       Device ID (unsigned integer) for calling the right target on device
-    :param data_in:         Numpy array with
     :param block_plot:      Blocking and showing plot
     :return:                None
     """
@@ -149,12 +148,6 @@ def run_math_on_target(device_id: int, block_plot: bool=False) -> None:
     np.save(f'{exp0.get_path2run}/results_mult.npy', data_dut, allow_pickle=True)
     plot_arithmetic(data_out, data_ref, path2save=exp0.get_path2run, block_plot=block_plot)
 
-if __name__ == '__main__':
-    run_math_on_target(
-        device_id=1,
-        block_plot=True
-    )
-
 
 def plot_arithmetic(data_out: np.ndarray, data_ref: np.ndarray,
                     path2save: str='', block_plot: bool=False) -> None:
@@ -170,7 +163,7 @@ def plot_arithmetic(data_out: np.ndarray, data_ref: np.ndarray,
     plt.xlabel(r'Digital Input $x$')
     plt.ylabel(r'Digital Output $y$')
 
-    mae = np.sum(np.abs(data_ref - data_out)) / data_ref.size
+    mae = np.sum(np.abs(data_out - data_ref)) / data_ref.size
     plt.title(f'MAE = {mae:.4f}')
 
     plt.grid(True)

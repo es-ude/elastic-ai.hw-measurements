@@ -13,12 +13,13 @@ cocotb_settings = dict(
         '00_echo/skeleton_echo.v',
         '01_rom/skeleton_rom.v', '01_rom/waveform_lut0.v',
         '02_bram/skeleton_ram.v', '02_bram/bram_single.v',
+        '03_mult/skeleton_math.v', '03_mult/mult_lut_signed.v', '03_mult/adder_full.v', '03_mult/adder_half.v'
     ],
     path2src=Path(test_dut.__file__).parent / 'design_fpga',
     top_module_name='TOP_MODULE',
     cocotb_test_module="elasticai.fpga_testing.tests.design_rom_tb",
     params={
-        'NUM_DUT': 3, 'UART_CNT_BAUDRATE': 27, 'UART_FIFO_BYTE_SIZE': 3,
+        'NUM_DUT': 4, 'UART_CNT_BAUDRATE': 27, 'UART_FIFO_BYTE_SIZE': 3,
         'TEST_ENV_CMDS_BITWIDTH': 2, 'TEST_ENV_ADR_WIDTH': 6, 'TEST_ENV_DATA_BITWIDTH': 16
     }
 )

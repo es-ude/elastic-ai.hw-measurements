@@ -1,9 +1,9 @@
 module TEST_ENVIRONMENT#(
-    parameter BITWIDTH_DATA = 5'd16, 
-    parameter BITWIDTH_ADR = 6'd6,
-    parameter NUM_DUT = 6'd3,
-    parameter NUM_BITS_HEADER = 6'd32,
-    parameter UINT_DATATYPE = 1'd1
+    parameter BITWIDTH_DATA = 16,
+    parameter BITWIDTH_ADR = 6,
+    parameter NUM_DUT = 4,
+    parameter NUM_BITS_HEADER = 32,
+    parameter UINT_DATATYPE = 1
 )(
     input wire CLK,
     input wire RSTN,
@@ -34,14 +34,14 @@ module TEST_ENVIRONMENT#(
     //  - BITWIDTH_OUT (5-bits):    Bitwidth of output data
     wire [NUM_BITS_HEADER-'d7:0] head_array [NUM_DUT:0];
     assign HEAD_INFO = {NUM_DUT[5:0], head_array[SEL]};
-    
+
+    // SEL == 'd0 will be skipped!
     assign dout[0] = 'd0123;
     assign head_array[0] = {4'd0, 6'd0, 6'd1, 5'd0, BITWIDTH_DATA[4:0]};
     assign rdy_filt[0] = 1'd0; 
 
-    // SEL == 'd0 will be skipped!
     //################## List with DUT ################## 
-    SKELETON_ECHO#(BITWIDTH_DATA, BITWIDTH_HEAD) DUT0(
+    SKELETON_ECHO#(BITWIDTH_DATA, BITWIDTH_HEAD) DUT_01 (
         .CLK_SYS(CLK),
         .RSTN(RSTN),
         .EN(SEL == 'd1),
@@ -52,7 +52,7 @@ module TEST_ENVIRONMENT#(
         .DATA_VALID(rdy_filt[1])
     );    
         
-    SKELETON_ROM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD) DUT1(
+    SKELETON_ROM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD) DUT_02 (
         .CLK_SYS(CLK),
         .RSTN(RSTN),
 		.EN(SEL == 'd2),
@@ -63,7 +63,7 @@ module TEST_ENVIRONMENT#(
 		.RDY(rdy_filt[2])
     );  
     
-    SKELETON_RAM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD, BITWIDTH_ADR) DUT2(
+    SKELETON_RAM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD, BITWIDTH_ADR) DUT_03 (
         .CLK_SYS(CLK),
         .RSTN(RSTN),
 		.EN(SEL == 'd3),
@@ -74,6 +74,24 @@ module TEST_ENVIRONMENT#(
 		.DATA_OUT(dout[3]),
 		.DATA_HEAD(head_array[3]),
 		.RDY(rdy_filt[3])    
-    );  
+    );
+
+    SKELETON_MATH#(
+        .BITWIDTH_IN('d8),
+        .BITWIDTH_SYS(BITWIDTH_DATA),
+        .BITWIDTH_HEAD(BITWIDTH_HEAD),
+        .BITWIDTH_ADR(BITWIDTH_ADR)
+    ) DUT_04 (
+        .CLK_SYS(CLK),
+        .RSTN(RSTN),
+		.EN(SEL == 'd4),
+		.TRGG_START_CALC(START_FLAG),
+		.RnW(RnW),
+		.ADR(ADR),
+		.DATA_IN(DATA_IN),
+		.DATA_OUT(dout[4]),
+		.DATA_HEAD(head_array[4]),
+		.RDY(rdy_filt[4])
+    );
         
 endmodule

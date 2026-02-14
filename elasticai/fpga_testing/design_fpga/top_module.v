@@ -1,6 +1,6 @@
 // UART_CNT_BAUDRATE = 216 --> UART_BAUD = 115.200
 module TOP_MODULE#(
-    parameter NUM_DUT = 3,
+    parameter NUM_DUT = 4,
     parameter UART_CNT_BAUDRATE = 216,
     parameter UART_FIFO_BYTE_SIZE = 3,
     parameter TEST_ENV_CMDS_BITWIDTH = 2,
@@ -17,7 +17,7 @@ module TOP_MODULE#(
     output wire         UART_TX,
     input wire          UART_RX
 );
-    localparam TEST_HEAD_BITWIDTH = 6'd32;
+    localparam TEST_HEAD_BITWIDTH = 32;
     localparam UART_BITWIDTH = 8;
     
     //Signals for UART module
@@ -40,9 +40,9 @@ module TOP_MODULE#(
     //##########################################################
     //UNTER-MODULE: DEVICE UNDER TEST    
     TEST_ENVIRONMENT#(
+        .NUM_DUT(NUM_DUT),
         .BITWIDTH_DATA(TEST_ENV_DATA_BITWIDTH), 
-        .BITWIDTH_ADR(TEST_ENV_ADR_WIDTH), 
-        .NUM_DUT(NUM_DUT), 
+        .BITWIDTH_ADR(TEST_ENV_ADR_WIDTH),
         .NUM_BITS_HEADER(TEST_HEAD_BITWIDTH), 
         .UINT_DATATYPE(1'd1)
     ) DUT(

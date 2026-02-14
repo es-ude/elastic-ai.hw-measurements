@@ -6,7 +6,7 @@
 // Copied on: 	    {$date_copy_created}
 // Module Name:     SKELETON_MATH
 // Target Devices:  FPGA
-// Tool Versions:   1v1
+// Tool Versions:   1v0
 // Description:     Skeleton for testing math operations on device (in one system clock cycle)
 // Dependencies:    None
 //
@@ -74,12 +74,12 @@ always@(posedge CLK_SYS) begin
     end else begin
         // --- Loading data to internal RAM
         data_dut[ADR] <= (~RnW) ? DATA_IN[(BITWIDTH_SYS-'d1)-:BITWIDTH_IN] : data_dut[ADR];
-
+        
         // --- Pipelining Multiplier Input (1-Delay Stage)
         if(run_test) begin
             run_test <= (cnt_mult_wait == WAIT_CYC_MULT) ? 1'd0 : run_test;
             cnt_mult_wait <= (cnt_mult_wait == WAIT_CYC_MULT) ? 'd0 : cnt_mult_wait + 'd1;
-
+            
             pipe_dut_out <= data_mul;
             for(i0 = 'd0; i0 < SIZE_INPUT; i0 = i0 + 'd1) begin
                 pipe_dut_in[i0] <= data_dut[i0];
@@ -87,7 +87,7 @@ always@(posedge CLK_SYS) begin
         end else begin
             run_test <= TRGG_START_CALC;
             cnt_mult_wait <= 'd0;
-
+                   
             pipe_dut_out <= pipe_dut_out;
             for(i0 = 'd0; i0 < SIZE_INPUT; i0 = i0 + 'd1) begin
                 pipe_dut_in[i0] <= pipe_dut_in[i0];

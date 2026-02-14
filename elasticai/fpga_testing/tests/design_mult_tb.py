@@ -17,7 +17,7 @@ cocotb_settings = dict(
     ],
     path2src=Path(test_dut.__file__).parent / 'design_fpga',
     top_module_name='TOP_MODULE',
-    cocotb_test_module="elasticai.fpga_testing.tests.design_ram_tb",
+    cocotb_test_module="elasticai.fpga_testing.tests.design_mult_tb",
     params={
         'NUM_DUT': 4, 'UART_CNT_BAUDRATE': 27, 'UART_FIFO_BYTE_SIZE': 3,
         'TEST_ENV_CMDS_BITWIDTH': 2, 'TEST_ENV_ADR_WIDTH': 6, 'TEST_ENV_DATA_BITWIDTH': 16
@@ -33,22 +33,15 @@ async def top_module(dut):
     baudrate = dut.UART_CNT_BAUDRATE.value.to_unsigned() * dut.UART_MOD.NSAMP.value.to_unsigned()
     data_send_list = [
         ['00000100', '00000000', '00000001'],  # enable LED
-        ['00000010', '00000000', '00000110'],  # Select DUT #3
-        ['01000000', '00000000', '00000001'],  # Set data value on ADR = 0
-        ['01000001', '00000000', '00000010'],  # Set data value on ADR = 1
-        ['01000010', '00000000', '00000011'],  # Set data value on ADR = 2
-        ['01000011', '00000000', '00000100'],  # Set data value on ADR = 3
-        ['01000100', '00000000', '00001000'],  # Set data value on ADR = 4
-        ['01000101', '00000000', '00010000'],  # Set data value on ADR = 5
-        ['01000110', '00000000', '00100000'],  # Set data value on ADR = 6
-        ['01000111', '00000000', '01000000'],  # Set data value on ADR = 7
-        ['01001000', '00000000', '10000000'],  # Set data value on ADR = 8
-        ['01001001', '00000001', '00000000'],  # Set data value on ADR = 9
-        ['01001010', '00000010', '00000000'],  # Set data value on ADR = 10
-        ['01001011', '00000100', '00000000'],  # Set data value on ADR = 11
-        ['01001100', '00001000', '00000000']   # Set data value on ADR = 12
+        ['00000010', '00000000', '00001000'],  # Select DUT #4
+        ['01000000', '00000011', '00000000'],  # Set data value on ADR = 0
+        ['01000001', '00000001', '00000000'],  # Set data value on ADR = 1
+        ['00000001', '00000000', '00000000'],  # Do inference
+        ['00000001', '00000000', '00000000'],  # Do inference
+        ['00000001', '00000000', '00000000'],  # Do inference
+        ['00000001', '00000000', '00000000'],  # Do inference
     ]
-    for idx in range(12):
+    for idx in range(2):
         data_send_list.append([f'10{idx:06b}', '00000000', '00000000'])
 
     data_send_list.append(['00000100', '00000000', '00000000'])  # disable LED
