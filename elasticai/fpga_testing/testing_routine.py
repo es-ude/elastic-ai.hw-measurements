@@ -15,9 +15,7 @@ def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> 
     :param show_plots:          If true, showing and blocking the results
     :return:                    None
     """
-    test_type, test_to_run = extract_available_structures_on_device(
-        print_rqst=print_rqst_results
-    )
+    test_type, test_to_run = extract_available_structures_on_device(print_rqst=print_rqst_results)
     for idx, used_skeleton in enumerate(test_to_run):
         do_plot = idx == len(test_to_run)-1 and show_plots
         match(test_type[used_skeleton]):

@@ -23,7 +23,7 @@ class SettingsRxM:
 DefaultSettingsRxM = SettingsRxM(
     num_repetitions=10,
     bitwidth_rom=16,
-    adrwidth_rom=5,
+    adrwidth_rom=6,
     signed_rom=False,
 )
 
@@ -47,13 +47,17 @@ class ExperimentRxM(ExperimentMain):
         set = DefaultSettingsRxM
         set.adrwidth_rom = self.get_adrwidth_structure
         set.bitwidth_rom = self.get_bitwidth_structure
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_{self._type_experiment.upper()}{device_id:03d}', start_folder=get_path_to_project())
+        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_{device_id:03d}_{self._type_experiment.upper()}', start_folder=get_path_to_project())
         self.__settings_rom = yaml_handler.get_class(SettingsRxM)
         self.__data_scaling_value = 2 ** (self._device.get_bitwidth_data - self.__settings_rom.bitwidth_rom)
 
     @property
     def get_adrwidth_structure(self) -> int:
         return int(np.ceil(np.log2(self.__header.num_outputs)))
+
+    @property
+    def get_number_adr(self) -> int:
+        return int(self.__header.num_outputs)
 
     @property
     def get_bitwidth_structure(self) -> int:
@@ -81,22 +85,25 @@ class ExperimentRxM(ExperimentMain):
 
     def preprocess_ram_data(self, adr_start: int=0) -> np.ndarray:
         """Preprocessing the data in order to have the data stream suitable for tested device (hex and data frame)"""
+        if self.__settings_rom.adrwidth_rom > self.get_adrwidth_structure:
+            raise ValueError(f"Selected ADRWIDTH ({self.__settings_rom.adrwidth_rom} vs. {self.get_adrwidth_structure}) is higher than on hardware implemented")
+
         waveform_ana = np.random.randint(
             low=self.get_low_bit,
             high=self.get_high_bit,
-            size=(2**self.__settings_rom.adrwidth_rom-1-adr_start, ),
+            size=(self.get_number_adr-adr_start, ),
             dtype=np.int32
         )
 
         data_write_into_mem = self._device.preparing_data_memory_write_architecture(
             signal=waveform_ana,
-            adr_start=0,
+            adr_start=adr_start,
             bit_position_start=self.__data_scaling_value,
             is_signed=self.__settings_rom.signed_rom
         )
         data_read_from_mem = self._device.preparing_data_memory_read_architecture(
-            signal=np.zeros_like(waveform_ana) + 1,
-            adr_start=0,
+            signal=np.zeros_like(waveform_ana),
+            adr_start=adr_start,
             bit_position_start=self.__data_scaling_value,
             is_signed=self.__settings_rom.signed_rom
         )
@@ -107,7 +114,8 @@ class ExperimentRxM(ExperimentMain):
         """Post-processing the data from device to have in readable format and numpy format"""
         data_return = self._device.slice_data_from_transmission(
             data=self._buffer_data_get,
-            is_signed=self.__settings_rom.signed_rom
+            is_signed=self.__settings_rom.signed_rom,
+            stepsize=1
         )
         return data_return / self.__data_scaling_value
 
@@ -162,28 +170,30 @@ def run_ram_test_on_target(device_id: int, block_plot: bool=False) -> None:
     data_dut['data_in'].append(data_in)
     data_dut['data_out'].append(data_out)
     np.save(f'{exp0.get_path2run}/results_ram.npy', data_dut, allow_pickle=True)
-
-    plot_call(data_in, exp0.get_path2run, block_plot=False)
-    plot_call(data_out, exp0.get_path2run, block_plot=block_plot)
+    plot_call(data_in, data_out, exp0.get_path2run, block_plot=block_plot)
 
 
-def plot_call(xout: np.ndarray, path: str='', block_plot: bool=False) -> None:
+def plot_call(x_in: np.ndarray, x_out: np.ndarray, path: str='', block_plot: bool=False) -> None:
     """Plotting the signals from calling the DUT
     Args:
-        xout:           Numpy array with transient signal which returns from device
+        x_in:           Numpy array with data to store in memory
+        x_out:          Numpy array with data read from memory after writing
         path:           Path for saving the results
         block_plot:     Blocking and showing plot
     Returns:
         None
     """
+    start_pos = x_in.size+1
     plt.figure()
-    plt.plot(xout, marker='.', markersize=4, color=get_color_plot(0), label='Output')
+    plt.plot(x_in, marker='.', markersize=4, color=get_color_plot(0), label='Write')
+    plt.plot(x_out[start_pos:], marker='o', markersize=4, color=get_color_plot(1), label='Read')
 
-    plt.xlim([0, xout.size])
+    plt.xlim([0, x_in.size])
     plt.xlabel('Call Iteration')
     plt.ylabel(r'X_${out}$')
 
     plt.grid()
+    plt.legend()
     plt.tight_layout(pad=0.5)
     if path:
         save_figure(plt, path, f'call_lut')

@@ -38,23 +38,26 @@ module SKELETON_RAM#(
 );
     
 localparam BITWIDTH_OFFSET = BITWIDTH_SYS - BITWIDTH_IN;
-assign DATA_HEAD = {4'd2, BITWIDTH_ADR[5:0], BITWIDTH_ADR[5:0], BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
+localparam NUM_POSITIONS = 2**BITWIDTH_ADR-'d4;
+assign DATA_HEAD = {4'd2, NUM_POSITIONS[5:0], NUM_POSITIONS[5:0], BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
 
+wire en_module, we_module;
 wire [BITWIDTH_IN-'d1:0] ram_din, ram_dout; 
+assign en_module = EN && RSTN && ~TRGG_START_CALC;
+assign we_module = ~RnW;
 assign ram_din = DATA_IN[(BITWIDTH_SYS-'d1)-:BITWIDTH_IN];
 assign DATA_OUT = {ram_dout, {BITWIDTH_OFFSET{1'd0}}};
-
 assign RDY = 1'd1;
 
 // --- DUT INTEGRATION (JUST REPLACE HERE)
 BRAM_SINGLE#(
     BITWIDTH_IN,
-    2**BITWIDTH_ADR,
+    NUM_POSITIONS,
     ""
 ) DUT (
     .CLK_RAM(CLK_SYS),
-    .EN(EN && RSTN),
-    .WE(RnW && TRGG_START_CALC),
+    .EN(en_module),
+    .WE(we_module),
     .ADR(ADR),
     .DIN(ram_din),
     .DOUT(ram_dout)

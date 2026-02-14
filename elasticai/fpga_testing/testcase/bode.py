@@ -70,7 +70,7 @@ class ExperimentBode(ExperimentMain):
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsBode
         set.bitwidth_filter = self.get_bitwidth_filter
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_Bode{device_id:03d}', start_folder=get_path_to_project())
+        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_{device_id:03d}_Bode', start_folder=get_path_to_project())
         self.__settings_bode = yaml_handler.get_class(SettingsBode)
         self.__data_scaling_value = 2 ** (self._device.get_bitwidth_data - self.__settings_bode.bitwidth_filter)
 

@@ -7,7 +7,7 @@
 // Module Name:     Template for building a single-port BlockRAM on device
 // Target Devices:  ASIC / FPGA
 // Tool Versions:   1v0
-// Processing:      Data applied on posedge CLK_RAM, handling to BRAM on negedge CLK_RAM
+// Processing:      Data applied on posedge CLK_RAM, handling to BRAM on posedge CLK_RAM
 // Dependencies:    DATA_FILE is optional
 //
 // State: 	        Works!
@@ -53,10 +53,12 @@ module BRAM_SINGLE#(
     `endif
            
     integer i0; 
-    always @(negedge CLK_RAM) begin
+    always @(posedge CLK_RAM) begin
         if(EN) begin
             if(WE) begin
-                bram_block[ADR] = DIN;
+                bram_block[ADR] <= DIN;
+            end else begin
+                bram_block[ADR] <= bram_block[ADR];
             end
         end else begin
             for(i0='d0; i0 < RAMWIDTH; i0 = i0 + 'd1) begin

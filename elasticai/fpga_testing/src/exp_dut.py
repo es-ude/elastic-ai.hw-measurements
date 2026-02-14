@@ -165,7 +165,7 @@ class DeviceUnderTestHandler:
         config0 = self.get_dut_config(0)
 
         dict_config = dict()
-        for idx in range(config0.num_duts):
+        for idx in range(config0.num_duts+1):
             dict_config.update({f'dev{idx:02d}': self.get_dut_config(idx)})
         if print_results:
             self.__print_dict_config(dict_config)
@@ -255,19 +255,9 @@ class DeviceUnderTestHandler:
 
     def preparing_data_memory_write_architecture(self, signal: np.ndarray, adr_start: int, bit_position_start: int, is_signed: bool = False) -> bytes:
         """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
-        data = self.data_to_hex(
-            reg=self.__REG_DUT_CNTRL,
-            adr=2,
-            data=2,
-            is_signed=is_signed
-        )
+        data = bytes()
         for ite, val in enumerate(signal):
-            data += self.data_to_hex(
-                reg=self.__REG_DUT_WR,
-                adr=adr_start + ite,
-                data=val * bit_position_start,
-                is_signed=is_signed
-            )
+            data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=adr_start + ite, data=val * bit_position_start, is_signed=is_signed)
         return data
 
     def preparing_data_memory_read_architecture(self, signal: np.ndarray, adr_start: int, bit_position_start: int,
@@ -275,12 +265,8 @@ class DeviceUnderTestHandler:
         """Preparing the data stream to FPGA by converting the numpy input (1:1)"""
         data = bytes()
         for ite, val in enumerate(signal):
-            data += self.data_to_hex(
-                reg=self.__REG_DUT_RD,
-                adr=adr_start+ite,
-                data=val*bit_position_start,
-                is_signed=is_signed
-            )
+            data += self.data_to_hex(reg=self.__REG_DUT_RD, adr=adr_start+ite, data=val*bit_position_start, is_signed=is_signed)
+        data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
         return data
 
     def preparing_data_creator_architecture(self, signal: list, num_input_layer: int, num_output_layer: int,

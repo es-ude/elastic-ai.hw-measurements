@@ -50,8 +50,8 @@ module UART_MIDDLEWARE#(
     output reg [$clog2(NUM_DUT):0]          DUT_SEL,
     output reg [BITWIDTH_DATA-'d1:0]        DUT_DIN,
     input wire [BITWIDTH_DATA-'d1:0]        DUT_DOUT,
-    output wire [BITWIDTH_ADR-'d1:0]        DUT_ADR,
-    output wire                             DUT_RnW,
+    output reg [BITWIDTH_ADR-'d1:0]         DUT_ADR,
+    output reg                              DUT_RnW,
     input wire [BITWIDTH_HEAD-'d1:0]        DUT_HEADER
 );
     localparam REG_DUT_CNTL = 2'd0, REG_DUT_WR = 2'd1, REG_DUT_RD = 2'd2, REG_HEADER = 2'd3;
@@ -60,8 +60,8 @@ module UART_MIDDLEWARE#(
     reg [1:0] shift_test;
     reg trigger_test;
     wire do_update_data;
-
     wire [BITWIDTH_CMDS-'d1:0] sel_cmds;
+    wire [BITWIDTH_ADR-'d1:0] sel_adr;
     wire [BITWIDTH_DATA-'d1:0] sel_data;
 
     // --- Slicing header information
@@ -75,11 +75,9 @@ module UART_MIDDLEWARE#(
     // --- Data handler for Test module
     assign do_update_data = shift_drdy[0] && ~shift_drdy[1];
     assign DUT_DO_TEST = shift_test[0] ^ shift_test[1];
-    assign DUT_RnW = ~(sel_cmds == REG_DUT_WR);
-    assign sel_cmds = FIFO_DIN[(BITWIDTH_DATA+BITWIDTH_ADR)+:BITWIDTH_CMDS];
-    assign DUT_ADR = FIFO_DIN[BITWIDTH_DATA+:BITWIDTH_ADR];
-    assign sel_data =  FIFO_DIN[0+:BITWIDTH_DATA];
-
+    assign sel_cmds = (FIFO_RDY) ? FIFO_DIN[(BITWIDTH_DATA+BITWIDTH_ADR)+:BITWIDTH_CMDS] : 'd0;
+    assign sel_adr = (FIFO_RDY) ? FIFO_DIN[BITWIDTH_DATA+:BITWIDTH_ADR] : 'd0;
+    assign sel_data = (FIFO_RDY) ? FIFO_DIN[0+:BITWIDTH_DATA] : 'd0;
 
     // --- Implemented data protocol
     always@(posedge CLK_SYS) begin
@@ -91,16 +89,20 @@ module UART_MIDDLEWARE#(
             LED_CONTROL <= 1'd0;
             trigger_test <= 1'd0;
             DUT_SEL <= 'd0;
+            DUT_RnW <= 1'd1;
+            DUT_ADR <= 'd0;
             DUT_DIN <= 'd0;
         end else begin
             shift_drdy <= {shift_drdy[0], FIFO_RDY};
             shift_test <= {shift_test[0], trigger_test};
-            FIFO_DOUT <= (do_update_data) ? {sel_cmds, DUT_ADR, ((sel_cmds == REG_HEADER) ? data_head_send[DUT_ADR] : DUT_DOUT)} : FIFO_DOUT;
+            FIFO_DOUT <= (do_update_data) ? {sel_cmds, sel_adr, ((sel_cmds == REG_HEADER) ? data_head_send[sel_adr] : DUT_DOUT)} : FIFO_DOUT;
 
-            LED_CONTROL     <= (do_update_data && sel_cmds == REG_DUT_CNTL && |DUT_ADR[3:2])    ? ((DUT_ADR[3]) ? ~LED_CONTROL : sel_data[0])  : LED_CONTROL;
-            trigger_test    <= (do_update_data && sel_cmds == REG_DUT_CNTL && DUT_ADR[0])       ? ~trigger_test : trigger_test;
-            DUT_SEL         <= (do_update_data && sel_cmds == REG_DUT_CNTL && DUT_ADR[1])       ? sel_data[$clog2(NUM_DUT)+'d1:1] : DUT_SEL;
-            DUT_DIN         <= (do_update_data && sel_cmds == REG_DUT_WR)                       ? sel_data      : DUT_DIN;
+            LED_CONTROL     <= (do_update_data && sel_cmds == REG_DUT_CNTL && |sel_adr[3:2])    ? ((sel_adr[3]) ? ~LED_CONTROL : sel_data[0])  : LED_CONTROL;
+            trigger_test    <= (do_update_data && sel_cmds == REG_DUT_CNTL && sel_adr[0])       ? ~trigger_test : trigger_test;
+            DUT_SEL         <= (do_update_data && sel_cmds == REG_DUT_CNTL && sel_adr[1])       ? sel_data[$clog2(NUM_DUT)+'d1:1] : DUT_SEL;
+            DUT_RnW         <= (do_update_data)                                                 ? ~(sel_cmds == REG_DUT_WR) : DUT_RnW;
+            DUT_ADR         <= (do_update_data)                                                 ? sel_adr : DUT_ADR;
+            DUT_DIN         <= (do_update_data && sel_cmds == REG_DUT_WR)                       ? sel_data : DUT_DIN;
         end
     end
 endmodule

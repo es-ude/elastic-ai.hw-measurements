@@ -77,7 +77,7 @@ class SettingsCreator:
 
     @property
     def get_skeleton_id_integer(self) -> int:
-        return int.from_bytes(self.skeleton_id, 'big')
+        return int.from_bytes(self.skeleton_id, byteorder='big')
 
 DefaultSettingsCreator = SettingsCreator(
     num_samples_input=5,
@@ -105,7 +105,7 @@ class ExperimentCreator(ExperimentMain):
         set.model_bitwidth = self.get_bitwidth_creator
         set.num_samples_input = self.get_num_input_creator
         set.num_samples_output = self.get_num_output_creator
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_DNN{device_id:03d}', start_folder=get_path_to_project())
+        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_{device_id:03d}_Creator', start_folder=get_path_to_project())
         self.__settings_dnn = yaml_handler.get_class(SettingsCreator)
         self.__data_scaling_value = 2 ** (self._device.get_bitwidth_data - self.__settings_dnn.model_bitwidth)
 
