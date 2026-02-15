@@ -39,7 +39,7 @@ class TestingFPGA(unittest.TestCase):
     def test_header_dut_echo(self):
         rslt = self.fpga_dut.get_dut_config(1)
         assert rslt.num_duts == 3
-        assert rslt.dut_type == 0
+        assert rslt.dut_type == 1
         assert rslt.num_inputs == 1
         assert rslt.num_outputs == 1
         assert rslt.bitwidth_input == 16
@@ -48,7 +48,7 @@ class TestingFPGA(unittest.TestCase):
     def test_header_dut_rom(self):
         rslt = self.fpga_dut.get_dut_config(2)
         assert rslt.num_duts == 3
-        assert rslt.dut_type == 1
+        assert rslt.dut_type == 2
         assert rslt.num_inputs == 0
         assert rslt.num_outputs == 21
         assert rslt.bitwidth_input == 0

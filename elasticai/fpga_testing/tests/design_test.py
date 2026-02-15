@@ -26,6 +26,16 @@ class FPGADesignTest(unittest.TestCase):
         path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
         self.assertTrue(check_cocotb_test_result(str(path2xml)))
 
+    def test_mult(self):
+        from elasticai.fpga_testing.tests.design_mult_tb import cocotb_settings
+        path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
+        self.assertTrue(check_cocotb_test_result(str(path2xml)))
+
+    def test_hardtanh(self):
+        from elasticai.fpga_testing.tests.design_func_tb import cocotb_settings
+        path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
+        self.assertTrue(check_cocotb_test_result(str(path2xml)))
+
 
 if __name__ == '__main__':
     unittest.main()

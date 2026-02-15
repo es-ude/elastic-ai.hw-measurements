@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version     : Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
-| Date             : Sat Feb 14 22:27:04 2026
+| Date             : Sun Feb 15 13:53:27 2026
 | Host             : LAPTOP-PO39E6RB running 64-bit major release  (build 9200)
 | Command          : report_power -file TOP_MODULE_power_routed.rpt -pb TOP_MODULE_power_summary_routed.pb -rpx TOP_MODULE_power_routed.rpx
 | Design           : TOP_MODULE
@@ -30,10 +30,10 @@ Table of Contents
 ----------
 
 +--------------------------+--------------+
-| Total On-Chip Power (W)  | 0.071        |
+| Total On-Chip Power (W)  | 0.072        |
 | Design Power Budget (W)  | Unspecified* |
 | Power Budget Margin (W)  | NA           |
-| Dynamic (W)              | 0.009        |
+| Dynamic (W)              | 0.010        |
 | Device Static (W)        | 0.062        |
 | Effective TJA (C/W)      | 4.8          |
 | Max Ambient (C)          | 99.7         |
@@ -52,16 +52,16 @@ Table of Contents
 +----------------+-----------+----------+-----------+-----------------+
 | On-Chip        | Power (W) | Used     | Available | Utilization (%) |
 +----------------+-----------+----------+-----------+-----------------+
-| Clocks         |     0.004 |        3 |       --- |             --- |
-| Slice Logic    |    <0.001 |     2009 |       --- |             --- |
-|   LUT as Logic |    <0.001 |      623 |     20800 |            3.00 |
-|   Register     |    <0.001 |     1158 |     41600 |            2.78 |
+| Clocks         |     0.005 |        3 |       --- |             --- |
+| Slice Logic    |    <0.001 |     2051 |       --- |             --- |
+|   LUT as Logic |    <0.001 |      636 |     20800 |            3.06 |
+|   Register     |    <0.001 |     1186 |     41600 |            2.85 |
 |   F7/F8 Muxes  |    <0.001 |      128 |     32600 |            0.39 |
-|   Others       |     0.000 |        6 |       --- |             --- |
-| Signals        |     0.002 |     1646 |       --- |             --- |
+|   Others       |     0.000 |        8 |       --- |             --- |
+| Signals        |     0.002 |     1679 |       --- |             --- |
 | I/O            |     0.003 |       16 |       210 |            7.62 |
 | Static Power   |     0.062 |          |           |                 |
-| Total          |     0.071 |          |           |                 |
+| Total          |     0.072 |          |           |                 |
 +----------------+-----------+----------+-----------+-----------------+
 
 
@@ -140,7 +140,7 @@ Table of Contents
 +--------------+-----------+
 | Name         | Power (W) |
 +--------------+-----------+
-| TOP_MODULE   |     0.009 |
+| TOP_MODULE   |     0.010 |
 |   DUT        |     0.004 |
 |     DUT_03   |     0.004 |
 |       DUT    |     0.004 |

@@ -29,13 +29,13 @@
 // ------------------------------- DATA FRAME -----------------------------------------------------------------------
 
 module UART_MIDDLEWARE#(
-    parameter NUM_DUT = 6'd4,
-    parameter FIFO_SIZE = 5'd3,
-    parameter BITWIDTH = 5'd8,
-    parameter BITWIDTH_CMDS = 5'd2,
-    parameter BITWIDTH_ADR = 5'd6,
-    parameter BITWIDTH_DATA = 5'd16,
-    parameter BITWIDTH_HEAD = 6'd32
+    parameter NUM_DUT = 5,
+    parameter FIFO_SIZE = 3,
+    parameter BITWIDTH = 8,
+    parameter BITWIDTH_CMDS = 2,
+    parameter BITWIDTH_ADR = 6,
+    parameter BITWIDTH_DATA = 16,
+    parameter BITWIDTH_HEAD = 32
 )(
     // Global signals
     input wire                              CLK_SYS,

@@ -6,7 +6,7 @@
 // Copied on: 	    {$date_copy_created}
 // Module Name:     SKELETON_MATH
 // Target Devices:  FPGA
-// Tool Versions:   1v1
+// Tool Versions:   1v0
 // Description:     Skeleton for testing math operations on device (in one system clock cycle)
 // Dependencies:    None
 //
@@ -39,19 +39,19 @@ module SKELETON_MATH#(
 
 localparam WAIT_CYC_MULT = 8'd4;
 localparam BITWIDTH_OFFSET = BITWIDTH_SYS - BITWIDTH_IN;
-localparam BITWIDTH_MULT_OUT = 2*BITWIDTH_IN;
+localparam BITWIDTH_OUT = 2*BITWIDTH_IN;
 localparam SIZE_INPUT = 2, SIZE_OUTPUT = 1;
 
-assign DATA_HEAD = {4'd3, SIZE_INPUT[5:0], SIZE_OUTPUT[5:0], BITWIDTH_IN[4:0], BITWIDTH_MULT_OUT[4:0]};
+assign DATA_HEAD = {4'd4, SIZE_INPUT[5:0], SIZE_OUTPUT[5:0], BITWIDTH_IN[4:0], BITWIDTH_OUT[4:0]};
 
 // --- Control lines
 reg run_test;
 reg [$clog2(WAIT_CYC_MULT):0] cnt_mult_wait;
 reg [BITWIDTH_IN-'d1:0] data_dut [SIZE_INPUT-'d1:0];
 reg [BITWIDTH_IN-'d1:0] pipe_dut_in [SIZE_INPUT-'d1:0];
-reg [2*BITWIDTH_IN-'d1:0] pipe_dut_out;
+reg [SIZE_INPUT*BITWIDTH_IN-'d1:0] pipe_dut_out;
 
-wire signed [2*BITWIDTH_IN-'d1:0] data_mul;
+wire signed [SIZE_INPUT*BITWIDTH_IN-'d1:0] data_mul;
 wire [BITWIDTH_IN*SIZE_INPUT-'d1:0] data0;
 
 genvar k0;
@@ -59,7 +59,7 @@ for(k0 = 'd0; k0 < SIZE_INPUT; k0 = k0 + 'd1) begin
     assign data0[(k0*BITWIDTH_IN)+:BITWIDTH_IN] = data_dut[k0];
 end
 assign RDY = ~run_test;
-assign DATA_OUT = {pipe_dut_out, {(BITWIDTH_SYS-BITWIDTH_MULT_OUT){1'd1}}};
+assign DATA_OUT = {pipe_dut_out[0+:BITWIDTH_OUT], {(BITWIDTH_SYS-BITWIDTH_OUT){1'd0}}};
 
 integer i0;
 always@(posedge CLK_SYS) begin

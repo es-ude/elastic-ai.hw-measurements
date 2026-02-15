@@ -34,7 +34,7 @@ module SKELETON_FILT#(
 );
 
 localparam BITWIDTH_OFFSET = BITWIDTH_SYS - BITWIDTH_IN;
-assign DATA_HEAD = {4'd4, 6'd1, 6'd1, BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
+assign DATA_HEAD = {4'd5, 6'd1, 6'd1, BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
 
 wire module_drdy, module_dvalid;
 wire [BITWIDTH_IN-'d1:0] data_filt_in, data_filt_out;

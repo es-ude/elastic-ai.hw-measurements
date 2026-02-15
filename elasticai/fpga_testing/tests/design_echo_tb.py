@@ -2,28 +2,17 @@ import cocotb
 import random
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge
+from copy import deepcopy
 from pathlib import Path
 
 import elasticai.fpga_testing as test_dut
+from elasticai.fpga_testing.tests import cocotb_settings_basic
 from elasticai.creator.testing.cocotb_runner import run_cocotb_sim_for_src_dir
 
 
-cocotb_settings = dict(
-    src_files=[
-        "top_module.v", "uart_com.v", "uart_fifo.v", "uart_middleware.v", 'test_dut.v',
-        '00_echo/skeleton_echo.v',
-        '01_rom/skeleton_rom.v', '01_rom/waveform_lut0.v',
-        '02_bram/skeleton_ram.v', '02_bram/bram_single.v',
-        '03_mult/skeleton_math.v', '03_mult/mult_lut_signed.v', '03_mult/adder_full.v', '03_mult/adder_half.v'
-    ],
-    path2src=Path(test_dut.__file__).parent / 'design_fpga',
-    top_module_name='TOP_MODULE',
-    cocotb_test_module="elasticai.fpga_testing.tests.design_echo_tb",
-    params={
-        'NUM_DUT': 4, 'UART_CNT_BAUDRATE': 27, 'UART_FIFO_BYTE_SIZE': 3,
-        'TEST_ENV_CMDS_BITWIDTH': 2, 'TEST_ENV_ADR_WIDTH': 6, 'TEST_ENV_DATA_BITWIDTH': 16
-    }
-)
+cocotb_settings = deepcopy(cocotb_settings_basic)
+cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'design_fpga'
+cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.design_echo_tb"
 
 
 @cocotb.test()

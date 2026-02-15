@@ -39,7 +39,7 @@ module SKELETON_RAM#(
 
 localparam BITWIDTH_OFFSET = BITWIDTH_SYS - BITWIDTH_IN;
 localparam NUM_POSITIONS = 2**BITWIDTH_ADR-'d4;
-assign DATA_HEAD = {4'd2, NUM_POSITIONS[5:0], NUM_POSITIONS[5:0], BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
+assign DATA_HEAD = {4'd3, NUM_POSITIONS[5:0], NUM_POSITIONS[5:0], BITWIDTH_IN[4:0], BITWIDTH_IN[4:0]};
 
 wire en_module, we_module;
 wire [BITWIDTH_IN-'d1:0] ram_din, ram_dout;

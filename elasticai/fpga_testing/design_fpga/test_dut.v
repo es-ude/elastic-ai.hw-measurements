@@ -1,7 +1,7 @@
 module TEST_ENVIRONMENT#(
     parameter BITWIDTH_DATA = 16,
     parameter BITWIDTH_ADR = 6,
-    parameter NUM_DUT = 4,
+    parameter NUM_DUT = 5,
     parameter NUM_BITS_HEADER = 32,
     parameter UINT_DATATYPE = 1
 )(
@@ -27,7 +27,7 @@ module TEST_ENVIRONMENT#(
     
     //* This variable contains information about the module for read-in in Python 
     //  - NUM_DUTS (6-bits):        Total number of DUTs available in this function (automated added here)
-    //  - DUT_TPYE (4-bits):        0 = Echo, 1 = Multiplier, 2 = Division, 3 = ROM, 4 = RAM, 5 = Filter, 6 = Processor, 7 = Skeleton (elasticAI.creator)
+    //  - DUT_TPYE (4-bits):        0 = Disabled, 1 = Echo, 2 = ROM, 3 = RAM, 4 = Math, 5 = Filter, 6 = Pre-Processing, 7 = elasticAI.creator,  8 = End-To-End Processor
     //  - NUM_INPUTS (6-bits):      Number of used inputs
     //  - NUM_OUTPUTS (6-bits):     Number of used outputs
     //  - BITWIDTH_IN (5-bits):     Bitwidth of input data
@@ -41,7 +41,10 @@ module TEST_ENVIRONMENT#(
     assign rdy_filt[0] = 1'd0; 
 
     //################## List with DUT ################## 
-    SKELETON_ECHO#(BITWIDTH_DATA, BITWIDTH_HEAD) DUT_01 (
+    SKELETON_ECHO#(
+        .BITWIDTH_SYS(BITWIDTH_DATA),
+        .BITWIDTH_HEAD(BITWIDTH_HEAD)
+    ) DUT_01 (
         .CLK_SYS(CLK),
         .RSTN(RSTN),
         .EN(SEL == 'd1),
@@ -52,7 +55,11 @@ module TEST_ENVIRONMENT#(
         .DATA_VALID(rdy_filt[1])
     );    
         
-    SKELETON_ROM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD) DUT_02 (
+    SKELETON_ROM#(
+        .BITWIDTH_IN('d16),
+        .BITWIDTH_SYS(BITWIDTH_DATA),
+        .BITWIDTH_HEAD(BITWIDTH_HEAD)
+    ) DUT_02 (
         .CLK_SYS(CLK),
         .RSTN(RSTN),
 		.EN(SEL == 'd2),
@@ -63,7 +70,12 @@ module TEST_ENVIRONMENT#(
 		.RDY(rdy_filt[2])
     );  
     
-    SKELETON_RAM#('d16, BITWIDTH_DATA, BITWIDTH_HEAD, BITWIDTH_ADR) DUT_03 (
+    SKELETON_RAM#(
+        .BITWIDTH_IN('d16),
+        .BITWIDTH_SYS(BITWIDTH_DATA),
+        .BITWIDTH_HEAD(BITWIDTH_HEAD),
+        .BITWIDTH_ADR(BITWIDTH_ADR)
+    ) DUT_03 (
         .CLK_SYS(CLK),
         .RSTN(RSTN),
 		.EN(SEL == 'd3),
@@ -92,6 +104,24 @@ module TEST_ENVIRONMENT#(
 		.DATA_OUT(dout[4]),
 		.DATA_HEAD(head_array[4]),
 		.RDY(rdy_filt[4])
+    );
+
+    SKELETON_FUNC#(
+        .BITWIDTH_IN('d8),
+        .BITWIDTH_SYS(BITWIDTH_DATA),
+        .BITWIDTH_HEAD(BITWIDTH_HEAD),
+        .BITWIDTH_ADR(BITWIDTH_ADR)
+    ) DUT_05 (
+        .CLK_SYS(CLK),
+        .RSTN(RSTN),
+		.EN(SEL == 'd5),
+		.TRGG_START_CALC(START_FLAG),
+		.RnW(RnW),
+		.ADR(ADR),
+		.DATA_IN(DATA_IN),
+		.DATA_OUT(dout[5]),
+		.DATA_HEAD(head_array[5]),
+		.RDY(rdy_filt[5])
     );
         
 endmodule

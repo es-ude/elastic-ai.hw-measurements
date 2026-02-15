@@ -19,7 +19,7 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module SKELETON_MATH#(
+module SKELETON_FUNC#(
     parameter BITWIDTH_IN = 5'd8,
     parameter BITWIDTH_SYS = 5'd16,
     parameter BITWIDTH_HEAD = 6'd26,
@@ -39,8 +39,8 @@ module SKELETON_MATH#(
 
 localparam WAIT_CYC_MULT = 8'd4;
 localparam BITWIDTH_OFFSET = BITWIDTH_SYS - BITWIDTH_IN;
-localparam BITWIDTH_OUT = 2*BITWIDTH_IN;
-localparam SIZE_INPUT = 2, SIZE_OUTPUT = 1;
+localparam BITWIDTH_OUT = BITWIDTH_IN;
+localparam SIZE_INPUT = 1, SIZE_OUTPUT = 1;
 
 assign DATA_HEAD = {4'd4, SIZE_INPUT[5:0], SIZE_OUTPUT[5:0], BITWIDTH_IN[4:0], BITWIDTH_OUT[4:0]};
 
@@ -59,7 +59,7 @@ for(k0 = 'd0; k0 < SIZE_INPUT; k0 = k0 + 'd1) begin
     assign data0[(k0*BITWIDTH_IN)+:BITWIDTH_IN] = data_dut[k0];
 end
 assign RDY = ~run_test;
-assign DATA_OUT = {pipe_dut_out[0+:BITWIDTH_OUT], {(BITWIDTH_SYS-BITWIDTH_OUT){1'd0}}};
+assign DATA_OUT = {pipe_dut_out, {(BITWIDTH_SYS-BITWIDTH_OUT){1'd1}}};
 
 integer i0;
 always@(posedge CLK_SYS) begin
@@ -97,11 +97,10 @@ always@(posedge CLK_SYS) begin
 end
 
 // --- DUT (JUST REPLACE HERE)
-MULT_LUT_SIGNED#(
-    .BITWIDTH(BITWIDTH_IN)
-) MULT (
+ACT_HARDTANH#(
+    .BITWIDTH('d8)
+) ACT_01 (
     .A(pipe_dut_in[0]),
-    .B(pipe_dut_in[1]),
     .Q(data_mul)
 );
 

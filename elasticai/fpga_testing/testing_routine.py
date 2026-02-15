@@ -20,20 +20,22 @@ def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> 
         do_plot = idx == len(test_to_run)-1 and show_plots
         match(test_type[used_skeleton]):
             case 0:
-                run_echo_on_target(device_id=used_skeleton, block_plot=do_plot)
+                raise ValueError("This testcase uses no structure - It is just disabling the environment")
             case 1:
-                run_rom_test_on_target(device_id=used_skeleton, block_plot=do_plot)
+                run_echo_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 2:
-                run_ram_test_on_target(device_id=used_skeleton, block_plot=do_plot)
+                run_rom_test_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 3:
-                run_math_on_target(device_id=used_skeleton, block_plot=do_plot)
+                run_ram_test_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 4:
-                run_filter_on_target(device_id=used_skeleton, block_plot=do_plot)
+                run_math_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 5:
-                raise NotImplementedError("Test Code for Event-Detection and Windowing is not implemented")
+                run_filter_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 6:
-                run_inference_on_target(device_id=used_skeleton, block_plot=do_plot)
+                raise NotImplementedError("Test Code for Event-Detection and Windowing is not implemented")
             case 7:
+                run_inference_on_target(device_id=used_skeleton, block_plot=do_plot)
+            case 8:
                 raise NotImplementedError("Test Code for End-To-End Processors is not implemented")
 
 

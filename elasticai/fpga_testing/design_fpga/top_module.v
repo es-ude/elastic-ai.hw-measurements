@@ -1,6 +1,6 @@
 // UART_CNT_BAUDRATE = 216 --> UART_BAUD = 115.200
 module TOP_MODULE#(
-    parameter NUM_DUT = 4,
+    parameter NUM_DUT = 5,
     parameter UART_CNT_BAUDRATE = 216,
     parameter UART_FIFO_BYTE_SIZE = 3,
     parameter TEST_ENV_CMDS_BITWIDTH = 2,

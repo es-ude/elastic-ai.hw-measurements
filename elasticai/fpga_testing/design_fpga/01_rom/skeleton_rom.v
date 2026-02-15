@@ -33,7 +33,7 @@ module SKELETON_ROM#(
 );
     
 localparam BITWIDTH_OFFSET = BITWIDTH_SYS - BITWIDTH_IN;
-assign DATA_HEAD = {4'd1, 6'd0, 6'd21, 5'd0, BITWIDTH_IN[4:0]};
+assign DATA_HEAD = {4'd2, 6'd0, 6'd21, 5'd0, BITWIDTH_IN[4:0]};
 
 wire [BITWIDTH_IN-'d1:0] dout_rom; 
 assign DATA_OUT = {dout_rom, {BITWIDTH_OFFSET{1'd0}}};

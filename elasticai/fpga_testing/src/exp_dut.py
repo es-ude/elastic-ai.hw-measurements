@@ -219,9 +219,7 @@ class DeviceUnderTestHandler:
         for data in data_sliced[self.get_slicing_position*stepsize::stepsize]:
             val = self.data_from_hex(data, is_signed)
             data_out.append(val)
-
-        data_out = np.array(data_out, dtype=int)
-        return data_out
+        return np.array(data_out, dtype=int)
 
     def slice_data_to_packet_size(self, data: bytes) -> list:
         """Slicing the data bytes from FPGA into list"""
@@ -283,36 +281,15 @@ class DeviceUnderTestHandler:
                     data += self.data_to_hex(reg=self.__REG_DUT_RD, adr=18+idy, data=0, is_signed=False)
         return data
 
-    def preparing_data_arithmetic_architecture(self, signal: list, num_input_layer: int,
-                                               bit_position_start: int, is_signed: bool=False,
-                                               mode_same_input: bool=False, mode_slow: bool=False) -> bytes:
+    def preparing_data_arithmetic_architecture(self, signal: list, bit_position_start: int, is_signed: bool=False) -> bytes:
         """Preparing the data stream to FPGA by converting the numpy input"""
         # --- Data Input
         data = bytes()
-        num_repeats_call = 2 if mode_slow else 1
-        if mode_same_input:
-            for val in signal:
-                # --- Sending data
-                for idy in range(num_input_layer):
-                    data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=idy, data=val*bit_position_start, is_signed=is_signed)
-                # --- Do pipelined calculation
-                for idy in range(num_repeats_call):
-                    data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=1, data=0, is_signed=False)
-                # --- Getting the value
-                for idy in range(num_repeats_call):
-                    data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=0, data=0, is_signed=False)
-        else:
-            for valx in signal:
-                for valy in signal:
-                    # --- Sending data
-                    data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=0, data=valx*bit_position_start, is_signed=is_signed)
-                    data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=1, data=valy*bit_position_start, is_signed=is_signed)
-                    # --- Do pipelined calculation
-                    for idz in range(2):
-                        data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=1, data=0, is_signed=False)
-                    # --- Getting the value
-                    for idz in range(2):
-                        data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=0, data=0, is_signed=False)
+        for packet in signal:
+            for idx, val in enumerate(packet):
+                data += self.data_to_hex(reg=self.__REG_DUT_WR, adr=idx, data=val*bit_position_start, is_signed=is_signed)
+            data += self.data_to_hex(reg=self.__REG_DUT_CNTRL, adr=1, data=0, is_signed=False)
+        data += self.data_to_hex(reg=0, adr=0, data=0, is_signed=False)
         return data
 
     def preparing_data_reading_skeleton_id(self, length: int=16) -> bytes:

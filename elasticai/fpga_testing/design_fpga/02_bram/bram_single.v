@@ -26,9 +26,9 @@
 // assign PREDEFINED = §{PREDEFINED};
 
 module BRAM_SINGLE#(
-    parameter BITWIDTH = 'd12,
-    parameter RAMWIDTH = 'd32,
-    parameter DATA_FILE = "C:/Git/denspp.translate/elasticai/creator_plugins/memory/verilog/bram_preload.mem"
+    parameter BITWIDTH = 12,
+    parameter RAMWIDTH = 32,
+    parameter DATA_FILE = ""
 )(
     input wire CLK_RAM,
     input wire EN,

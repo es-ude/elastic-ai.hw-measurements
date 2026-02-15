@@ -12,28 +12,26 @@
 //
 // State: 	        Works! (System Test done: 16.01.2025)
 // Improvements:    None
-// Parameters:      BITWIDTH_IN --> Bitwidth of input data
-//                  BITWIDTH_SYS --> Bitwidth of data bus on device
+// Parameters:      BITWIDTH_SYS --> Bitwidth of data bus on device
 //                  BITWIDTH_HEAD --> Bitwidth of metadata (skeleton properties)
 //////////////////////////////////////////////////////////////////////////////////
 
 module SKELETON_ECHO#(
-    parameter BITWIDTH_DATA = 5'd16,
-    parameter BITWIDTH_HEAD = 6'd26
+    parameter BITWIDTH_SYS = 16,
+    parameter BITWIDTH_HEAD = 26
 )(
     input wire CLK_SYS,
     input wire RSTN,
     input wire EN,
     input wire TRGG_START_CALC,
-    input wire [BITWIDTH_DATA-'d1:0] DATA_IN,
-    output reg [BITWIDTH_DATA-'d1:0] DATA_OUT,
+    input wire [BITWIDTH_SYS-'d1:0] DATA_IN,
+    output reg [BITWIDTH_SYS-'d1:0] DATA_OUT,
     output wire [BITWIDTH_HEAD-'d1:0] DATA_HEAD,
     output wire DATA_VALID
 );
 
     reg first_run_done;
-    assign DATA_OUT = DATA_IN;
-    assign DATA_HEAD = {4'd0, 6'd1, 6'd1, BITWIDTH_DATA[4:0], BITWIDTH_DATA[4:0]};
+    assign DATA_HEAD = {4'd1, 6'd1, 6'd1, BITWIDTH_SYS[4:0], BITWIDTH_SYS[4:0]};
     assign DATA_VALID = first_run_done && !TRGG_START_CALC;
 
     // --- Control lines
