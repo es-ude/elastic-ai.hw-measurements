@@ -4,7 +4,7 @@
 //
 // Create Date:     19.04.2023 21:15:14
 // Copied on: 	    §{date_copy_created}
-// Module Name:     UART FIFO Module for building complete communication procotocols
+// Module Name:     UART FIFO Module for building complete communication protocols
 // Target Devices:  FPGA
 // Tool Versions:   1v0
 // Dependencies:    None
@@ -16,22 +16,20 @@
 //                  BITWIDTH_ADR    --> Number of bits for address width
 //                  BITWIDTH_CMDS   --> Number of bits for commando
 //                  BITWIDTH        --> BITWIDTH FOR DATA TRANSMISSION
-//                  FIFO_SIZE       --> Number of bytes getting from UART
 //                  BITWIDTH_HEAD   --> Number of bits for processing DUT skeleton header information
 //////////////////////////////////////////////////////////////////////////////////
 // Example of the implemented data structure
 // ------------------------------- DATA FRAME -----------------------------------------------------------------------
-// # ---- CMD (2 bits)----  # ---- ADR (BITWIDTH_ADR) ----                  # ---- DATA (BITWIDTH_DATA) ----        #
+// # ---- CMD (2 bits) ---- # ---- ADR (BITWIDTH_ADR) ----                  # ---- DATA (BITWIDTH_DATA) ----        #
 // # 0: REG_DUT_CNTL        # xx | TOGGLE_LED | CH_LED | SEL_DUT | DO_TEST  # xx | SEL_DUT[N:0] | LED               #
 // # 1: REG_DUT_WR          # ---- ADR ----                                 # ---- DATA ----                        #
 // # 2: REG_DUT_RD          # ---- ADR ----                                 # xxxxxx                                #
 // # 3: REG_HEAD_RD         # ---- ADR ----                                 # xxxxxx                                #
 // ------------------------------- DATA FRAME -----------------------------------------------------------------------
 
-module UART_MIDDLEWARE#(
+module SPI_MIDDLEWARE#(
     parameter NUM_DUT = 5,
-    parameter FIFO_SIZE = 3,
-    parameter BITWIDTH = 8,
+    parameter BITWIDTH = 24,
     parameter BITWIDTH_CMDS = 2,
     parameter BITWIDTH_ADR = 6,
     parameter BITWIDTH_DATA = 16,
@@ -42,8 +40,8 @@ module UART_MIDDLEWARE#(
     input wire                              RSTN,
     // Control lines between middlware and FIFO
     input wire                              FIFO_RDY,
-    input wire [BITWIDTH* FIFO_SIZE-'d1:0]  FIFO_DIN,
-    output reg [BITWIDTH* FIFO_SIZE-'d1:0]  FIFO_DOUT,
+    input wire [BITWIDTH-'d1:0]  FIFO_DIN,
+    output reg [BITWIDTH-'d1:0]  FIFO_DOUT,
     // Output signals
     output reg                              LED_CONTROL,
     output wire                             DUT_DO_TEST,

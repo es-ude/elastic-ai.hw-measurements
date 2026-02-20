@@ -27,7 +27,7 @@ module TEST_ENVIRONMENT#(
     
     //* This variable contains information about the module for read-in in Python 
     //  - NUM_DUTS (6-bits):        Total number of DUTs available in this function (automated added here)
-    //  - DUT_TPYE (4-bits):        0 = Disabled, 1 = Echo, 2 = ROM, 3 = RAM, 4 = Math, 5 = Filter, 6 = Pre-Processing, 7 = elasticAI.creator,  8 = End-To-End Processor
+    //  - DUT_TYPE (4-bits):        0 = Disabled, 1 = Echo, 2 = ROM, 3 = RAM, 4 = Math, 5 = Filter, 6 = Pre-Processing, 7 = elasticAI.creator,  8 = End-To-End Processor
     //  - NUM_INPUTS (6-bits):      Number of used inputs
     //  - NUM_OUTPUTS (6-bits):     Number of used outputs
     //  - BITWIDTH_IN (5-bits):     Bitwidth of input data

@@ -5,13 +5,13 @@ from copy import deepcopy
 from pathlib import Path
 
 import elasticai.fpga_testing as test_dut
-from elasticai.fpga_testing.tests import cocotb_settings_basic
+from elasticai.fpga_testing.tests import cocotb_settings_dev
 from elasticai.creator.testing.cocotb_runner import run_cocotb_sim_for_src_dir
 
 
-cocotb_settings = deepcopy(cocotb_settings_basic)
-cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'design_fpga'
-cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.design_mult_tb"
+cocotb_settings = deepcopy(cocotb_settings_dev)
+cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'arty7_fpga'
+cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.arty7_rom_tb"
 
 
 @cocotb.test()
@@ -22,18 +22,15 @@ async def top_module(dut):
     baudrate = dut.UART_CNT_BAUDRATE.value.to_unsigned() * dut.UART_MOD.NSAMP.value.to_unsigned()
     data_send_list = [
         ['00000100', '00000000', '00000001'],  # enable LED
-        ['00000010', '00000000', '00001000'],  # Select DUT #4
-        ['01000000', '00000011', '00000000'],  # Set data value on ADR = 0
-        ['01000001', '00000001', '00000000'],  # Set data value on ADR = 1
-        ['00000001', '00000000', '00000000'],  # Do inference
-        ['00000001', '00000000', '00000000'],  # Do inference
-        ['00000001', '00000000', '00000000'],  # Do inference
-        ['00000001', '00000000', '00000000'],  # Do inference
+        ['00000010', '00000000', '00000110'],  # Select DUT #3
+        ['01000000', '00000000', '00000001'],  # Set data value
+        ['00000001', '00000000', '00000000'],  # Do Inference
+        ['00000001', '00000000', '00000000'],  # Do Inference
+        ['00000001', '00000000', '00000000'],  # Do Inference
+        ['00000001', '00000000', '00000000'],  # Do Inference
+        ['00000001', '00000000', '00000000'],  # Do Inference
+        ['00000001', '00000000', '00000000'],  # Do Inference
     ]
-    for idx in range(2):
-        data_send_list.append([f'10{idx:06b}', '00000000', '00000000'])
-
-    data_send_list.append(['00000100', '00000000', '00000000'])  # disable LED
     data_get_list = [['00000000', '00000000', '00000000'] for _ in data_send_list]
     for idx, data in enumerate(data_send_list[0:-1]):
         data_get_list[idx+1] = data
@@ -83,7 +80,7 @@ async def top_module(dut):
             await RisingEdge(dut.CLK_100MHz)
 
     # Checking Ending
-    for _ in range(4*baudrate):
+    for _ in range(baudrate):
         await RisingEdge(dut.CLK_100MHz)
 
 

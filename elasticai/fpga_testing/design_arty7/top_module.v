@@ -11,8 +11,7 @@ module TOP_MODULE#(
     input wire          CLK_100MHz,
     input wire          RSTN,
     // --- General purpose I/O
-    output wire [3:0]   LED_TEST,
-    output wire [7:0]   DEBUG,
+    output wire [3:0]   LED,
     // --- UART Communication
     output wire         UART_TX,
     input wire          UART_RX
@@ -34,8 +33,7 @@ module TOP_MODULE#(
     wire [TEST_HEAD_BITWIDTH-'d1:0] dut_header;
     
     //Interface for Debugging modules  
-    assign LED_TEST[3:1] = {dut_rdy, dut_sel[0], dut_start_flag};
-    assign DEBUG = {dut_dout[TEST_ENV_DATA_BITWIDTH-'d1-:5], dut_start_flag, dut_rdy, uart_mod_rdy};
+    assign LED[3:1] = {dut_rdy, dut_sel[0], dut_start_flag};
     
     //##########################################################
     //UNTER-MODULE: DEVICE UNDER TEST    
@@ -103,7 +101,7 @@ module TOP_MODULE#(
         .FIFO_RDY(uart_fifo_rdy),
         .FIFO_DIN(data_fifo_to_mid),
         .FIFO_DOUT(data_mid_to_fifo),
-        .LED_CONTROL(LED_TEST[0]),
+        .LED_CONTROL(LED[0]),
         .DUT_DO_TEST(dut_start_flag),
         .DUT_SEL(dut_sel),
         .DUT_DIN(dut_din),

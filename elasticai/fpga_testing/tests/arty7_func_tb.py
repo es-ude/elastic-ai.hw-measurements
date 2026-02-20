@@ -5,13 +5,13 @@ from copy import deepcopy
 from pathlib import Path
 
 import elasticai.fpga_testing as test_dut
-from elasticai.fpga_testing.tests import cocotb_settings_basic
+from elasticai.fpga_testing.tests import cocotb_settings_dev
 from elasticai.creator.testing.cocotb_runner import run_cocotb_sim_for_src_dir
 
 
-cocotb_settings = deepcopy(cocotb_settings_basic)
-cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'design_fpga'
-cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.design_func_tb"
+cocotb_settings = deepcopy(cocotb_settings_dev)
+cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'design_arty7'
+cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.arty7_func_tb"
 
 
 @cocotb.test()
