@@ -1,6 +1,6 @@
 # Device ENV5 Board with: xc7s15ftgb196-2, xc7s50ftgb196-1
 # ************************ I/O Definition ************************************
-# --- Clock (Warum nochmals auf A10?)
+# --- Clock
 set_property -dict { PACKAGE_PIN H11 IOSTANDARD LVCMOS33 }  [get_ports { CLK_100MHz }];
 create_clock -add -name clk_100 -period 10 -waveform {0 5}  [get_ports { CLK_100MHz }];
 
