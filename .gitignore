@@ -1,6 +1,7 @@
 .idea
 
 **/docs/apidocs
+**/test_dummy
 **/build*
 **/temp*
 **/config
