@@ -111,5 +111,5 @@ def flash_bitstream_from_file(path_to_bitstream_file: Path) -> None:
 if __name__ == "__main__":
     translate_bit_to_bin(
         path_to_bitstream_folder=Path(get_path_to_project("fpga_design")) / "design_project.runs" / "impl_1",
-        path_to_source=Path(get_path_to_project("artefact")) / "env5",
+        path_to_source=Path(get_path_to_project())
     )

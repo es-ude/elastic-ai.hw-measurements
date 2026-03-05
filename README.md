@@ -65,3 +65,9 @@ power to the device by holding the power button or plugging it from the socket.
 ## Build your Script for automated Testing and Plotting
 Here is an example for building the test routine of a quantization front-end (it includes a multiplexer, pre-amplifier and analog-digital converter).  
 Examples of the test routine are in the template folder.
+
+## Building FPGA designs for testing
+We will provide a basic structure for testing FPGA designs on
+1. Digilent Arty-A7 boards ([Link](https://digilent.com/reference/programmable-logic/arty-a7/start?srsltid=AfmBOoqeya_KoM1qKi6M-j7AMEs77-xNVkFL-W1l7ACA632gUgNiiGkL))
+2. UDE-IES elasticAI.hardware V5 ([Link](https://github.com/es-ude/elastic-ai.hardware/tree/master/v5/revision_2))
+3. Olimex GateMateA1-EVB ([Link](https://github.com/OLIMEX/GateMateA1-EVB/tree/main))

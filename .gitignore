@@ -18,3 +18,8 @@ uv.lock
 
 ### VIVADO files
 **/fpga_design
+
+### devenv and yosys+nextpnr+OpenFPGA tools
+**/.devenv
+**/.devenv.flake.nix
+**/oss-cad-suite
