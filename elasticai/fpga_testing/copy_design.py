@@ -40,6 +40,25 @@ def copy_design_env5_files(dest: Path) -> None:
     )
 
 
+def copy_design_gatemate_files(dest: Path) -> None:
+    """Function for copying the design files to test structures on FPGA (here: Olimex EVB Gatemate-A1)
+    :param dest:    Path with destination folder to copy all files into
+    :return:        None
+    """
+    import elasticai.fpga_testing as dut
+    path2design = Path(dut.__file__).parent / "design_gatemate"
+
+    dest.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+    copytree(
+        src=path2design,
+        dst=dest,
+        dirs_exist_ok=True
+    )
+
+
 def copy_skeleton(name: str, dest: Path) -> None:
     """Function for copying a skeleton to test structures on FPGAs
     :param name:    Name of skeleton file [dnn, echo, filter, math, ram, rom]
