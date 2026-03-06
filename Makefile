@@ -7,4 +7,6 @@ FREQ = 20
 
 SRC_DIR = design_gatemate
 
-include elasticai/fpga_testing/scripts_build/config.mk
+
+include elasticai/fpga_testing/scripts_build/oss/config.mk
+#include scripts/config.mk

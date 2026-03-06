@@ -6,6 +6,7 @@ create_clock -add -name clk_100 -period 10 -waveform {0 5}  [get_ports { CLK_100
 
 # --- SPI
 set_property -dict { PACKAGE_PIN P12 IOSTANDARD LVCMOS33 }  [get_ports { SPI_CSN }];
+set_property PULLUP true [get_ports SPI_CSN];
 set_property -dict { PACKAGE_PIN P11 IOSTANDARD LVCMOS33 }  [get_ports { SPI_MOSI }];
 set_property -dict { PACKAGE_PIN M12 IOSTANDARD LVCMOS33 }  [get_ports { SPI_MISO }];
 set_property -dict { PACKAGE_PIN N11 IOSTANDARD LVCMOS33 }  [get_ports { SPI_SCLK }];
@@ -22,6 +23,7 @@ set_property -dict { PACKAGE_PIN J11 IOSTANDARD LVCMOS33 }  [get_ports { LED[3] 
 #set_property -dict { PACKAGE_PIN P13 IOSTANDARD LVCMOS33 } [get_ports { M_GPIO[1] }];
 set_property -dict { PACKAGE_PIN L12 IOSTANDARD LVCMOS33 }  [get_ports { FPGA_BUSY }];
 set_property -dict { PACKAGE_PIN P10 IOSTANDARD LVCMOS33 }  [get_ports { RSTN }];
+set_property PULLUP true [get_ports RSTN];
 
 # --- GPIO (FPGA <--> Header)
 #set_property -dict { PACKAGE_PIN A12 IOSTANDARD LVCMOS33 } [get_ports { F_GPIO[0] }];
