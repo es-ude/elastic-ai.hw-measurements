@@ -1,15 +1,14 @@
-VLOG_SRC = $(shell find $(PRJ_ROOT)/$(SRC_DIR)/ -type f \( -iname \*.v -o -iname \*.sv \))
+VLOG_SRC = $(shell find $(PRJ_ROOT)/$(SRC_DIR)/ -type f \( -iname "*.v" -o -iname "*.sv" \) ! -iname "*_tb.v")
 
 ifeq ($(DEVICE),UP5K)
 # synthesize Verilog 
 $(BUILD_OUT)/synth/$(TOP).json: $(VLOG_SRC)
-	rm -rf $(BUILD_OUT)
 	mkdir -p $(BUILD_OUT)/synth
 	yosys \
 	-qql $(BUILD_OUT)/synth/$(TOP).log \
 	-p 'read_verilog -sv $^; hierarchy -top $(TOP); synth_ice40 -top $(TOP); tee -o $(BUILD_OUT)/$(TOP)_util_sync.rpt stat -width; write_json $@; write_verilog $(BUILD_OUT)/synth/$(TOP)_mapped.v;'
 # implementation
-$(BUILD_OUT)/$(TOP).bin: $(BUILD_OUT)/synth/$(TOP).json
+$(BUILD_OUT)/$(TOP).bin:
 	mkdir -p $(PRJ_ROOT)/$(BUILD_OUT)/impl
 	nextpnr-ice40 \
 		--up5k \
@@ -31,13 +30,12 @@ $(BUILD_OUT)/$(TOP).bin: $(BUILD_OUT)/synth/$(TOP).json
 else ifeq ($(DEVICE),CCGM1A1)
 # synthesize Verilog 
 synth_vlog $(BUILD_OUT)/synth/$(TOP).json $(BUILD_OUT)/synth/$(TOP).v: $(VLOG_SRC)
-	rm -rf $(BUILD_OUT)
 	mkdir -p $(BUILD_OUT)/synth
 	yosys \
 		-qql $(BUILD_OUT)/synth/$(TOP)_synth.log \
 		-p 'read_verilog -sv $^; synth_gatemate -top $(TOP) -luttree -nomx8; write_json $(BUILD_OUT)/synth/$(TOP).json; write_verilog $(BUILD_OUT)/synth/$(TOP).v'
 # generate bitstream for FPGA
-$(BUILD_OUT)/$(TOP).bin: $(BUILD_OUT)/synth/$(TOP).json
+$(BUILD_OUT)/$(TOP).bin:
 	mkdir -p $(BUILD_OUT)/impl
 	nextpnr-himbaechel \
 		--device $(DEVICE) \
