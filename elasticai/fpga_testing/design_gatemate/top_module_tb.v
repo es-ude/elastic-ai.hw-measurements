@@ -30,6 +30,7 @@ module TOP_MODULE_TB;
 		#200;
 		rst = 1;
 		#500;
-		$finish;
+
+		$stop;
 	end
 endmodule
