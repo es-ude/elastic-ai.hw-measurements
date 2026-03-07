@@ -1,5 +1,4 @@
 from pathlib import Path
-from elasticai.fpga_testing import get_path_to_project
 
 
 def read_bitstream_file_amd(path_to_bitstream_file: Path, remove_header: bool=True) -> bytes:
@@ -67,12 +66,29 @@ def write_into_bitstream_text(path_to_file: Path, data: bytes, add_lines: bool=T
                 f.write(f"{hex_bytes}\n")
 
 
+def write_bitstream_into_cheader(path_to_file: Path, data: bytes) -> None:
+    new_file = path_to_file.with_suffix('.h')
+    symbol_per_line = 16
+    with open(new_file, "w") as f:
+        f.write("""#include <string.h>
+#include <stdio.h>
+               
+const uint8_t bitstream[] = {
+""")
+        for i in range(0, len(data), symbol_per_line):
+            chunk = data[i:i + symbol_per_line]
+            hex_bytes = ", ".join(f"0x{b:02X}" for b in chunk)
+            f.write(f"\t{hex_bytes}, \n")
+        f.write("""};""")
+
+
 def translate_bit_to_bin(path_to_bitstream_folder: Path, path_to_source: Path) -> list[Path]:
     """Translating a full bitstream file (*.bit) into dedicated file (*.bin) used for direct AMD FPGA flashing
     :param path_to_bitstream_folder:    Path to the generated bitstream file from AMD Vivado
     :param path_to_source:              Path to the new bitstream file
     :return:                            List with paths to bitstream files
     """
+    from elasticai.fpga_testing import get_path_to_project
     if path_to_bitstream_folder.is_absolute():
         used_folder = path_to_bitstream_folder
     else:
@@ -106,10 +122,3 @@ def flash_bitstream_from_file(path_to_bitstream_file: Path) -> None:
     """
     data = read_bitstream_file_amd(path_to_bitstream_file, remove_header=True)
     flash_bitstream_from_data(data)
-
-
-if __name__ == "__main__":
-    translate_bit_to_bin(
-        path_to_bitstream_folder=Path(get_path_to_project("fpga_design")) / "design_project.runs" / "impl_1",
-        path_to_source=Path(get_path_to_project())
-    )

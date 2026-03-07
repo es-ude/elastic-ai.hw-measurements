@@ -30,27 +30,8 @@ module TOP_MODULE#(
     wire [TEST_HEAD_BITWIDTH-'d1:0] dut_header;
     
     //Interface for Debugging modules  
-    assign FPGA_BUSY = dut_rdy;
-    //assign LED[3:1] = {spi_mod_rdy, dut_rdy, dut_start_flag};
-    assign LED[3:2] = 2'b11;
-        
-    reg led0;
-    reg [22:0] counter;
-    always@(posedge CLK_100MHz) begin
-        if(~RSTN) begin
-            counter <= 'd0;
-            led0 <= 1'd0;
-        end else begin
-            if(counter == 250000) begin
-                led0 <= ~led0;
-                counter <= 'd0;
-            end else begin
-                led0 <= led0;
-                counter <= counter + 'd1;        
-            end
-        end
-    end
-    assign LED[1] = led0;
+    assign FPGA_BUSY = ~dut_rdy;
+    assign LED[3:1] = {spi_mod_rdy, dut_rdy, RSTN};
     
     //##########################################################
     //UNTER-MODULE: DEVICE UNDER TEST    

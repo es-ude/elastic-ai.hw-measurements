@@ -5,6 +5,5 @@ from .copy_design import (
     copy_skeleton,
     copy_vivado_implementation_results
 )
-from .scripts_build import *
 from .src import *
 from .testing_routine import run_embedded_test
