@@ -1,11 +1,11 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.
 ----------------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version     : Vivado v.2024.2 (win64) Build 5239630 Fri Nov 08 22:35:27 MST 2024
-| Date             : Fri Feb 20 12:26:37 2026
+| Date             : Mon Mar 23 14:28:14 2026
 | Host             : LAPTOP-PO39E6RB running 64-bit major release  (build 9200)
 | Command          : report_power -file TOP_MODULE_power_routed.rpt -pb TOP_MODULE_power_summary_routed.pb -rpx TOP_MODULE_power_routed.rpx
 | Design           : TOP_MODULE
-| Device           : xc7s50ftgb196-1
+| Device           : xc7s15ftgb196-2
 | Design State     : routed
 | Grade            : commercial
 | Process          : typical
@@ -30,14 +30,14 @@ Table of Contents
 ----------
 
 +--------------------------+--------------+
-| Total On-Chip Power (W)  | 0.084        |
+| Total On-Chip Power (W)  | 0.033        |
 | Design Power Budget (W)  | Unspecified* |
 | Power Budget Margin (W)  | NA           |
-| Dynamic (W)              | 0.012        |
-| Device Static (W)        | 0.072        |
-| Effective TJA (C/W)      | 3.3          |
-| Max Ambient (C)          | 84.7         |
-| Junction Temperature (C) | 25.3         |
+| Dynamic (W)              | 0.013        |
+| Device Static (W)        | 0.020        |
+| Effective TJA (C/W)      | 3.4          |
+| Max Ambient (C)          | 84.9         |
+| Junction Temperature (C) | 25.1         |
 | Confidence Level         | Low          |
 | Setting File             | ---          |
 | Simulation Activity File | ---          |
@@ -52,16 +52,16 @@ Table of Contents
 +----------------+-----------+----------+-----------+-----------------+
 | On-Chip        | Power (W) | Used     | Available | Utilization (%) |
 +----------------+-----------+----------+-----------+-----------------+
-| Clocks         |     0.004 |        3 |       --- |             --- |
-| Slice Logic    |    <0.001 |     1998 |       --- |             --- |
-|   LUT as Logic |    <0.001 |      593 |     32600 |            1.82 |
-|   Register     |    <0.001 |     1174 |     65200 |            1.80 |
-|   F7/F8 Muxes  |    <0.001 |      128 |     32600 |            0.39 |
+| Clocks         |     0.005 |        3 |       --- |             --- |
+| Slice Logic    |    <0.001 |     1999 |       --- |             --- |
+|   LUT as Logic |    <0.001 |      589 |      8000 |            7.36 |
+|   Register     |    <0.001 |     1174 |     16000 |            7.34 |
+|   F7/F8 Muxes  |    <0.001 |      128 |      8000 |            1.60 |
 |   Others       |     0.000 |        8 |       --- |             --- |
-| Signals        |     0.005 |     1652 |       --- |             --- |
-| I/O            |     0.002 |       11 |       100 |           11.00 |
-| Static Power   |     0.072 |          |           |                 |
-| Total          |     0.084 |          |           |                 |
+| Signals        |     0.004 |     1652 |       --- |             --- |
+| I/O            |     0.003 |       11 |       100 |           11.00 |
+| Static Power   |     0.020 |          |           |                 |
+| Total          |     0.033 |          |           |                 |
 +----------------+-----------+----------+-----------+-----------------+
 
 
@@ -71,8 +71,8 @@ Table of Contents
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
 | Source    | Voltage (V) | Total (A) | Dynamic (A) | Static (A) | Powerup (A) | Budget (A)  | Margin (A) |
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
-| Vccint    |       1.000 |     0.020 |       0.010 |      0.010 |       NA    | Unspecified | NA         |
-| Vccaux    |       1.800 |     0.013 |       0.000 |      0.013 |       NA    | Unspecified | NA         |
+| Vccint    |       1.000 |     0.014 |       0.010 |      0.004 |       NA    | Unspecified | NA         |
+| Vccaux    |       1.800 |     0.007 |       0.000 |      0.007 |       NA    | Unspecified | NA         |
 | Vcco33    |       3.300 |     0.002 |       0.001 |      0.001 |       NA    | Unspecified | NA         |
 | Vcco25    |       2.500 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vcco18    |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
@@ -81,7 +81,7 @@ Table of Contents
 | Vcco12    |       1.200 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vccaux_io |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 | Vccbram   |       1.000 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
-| Vccadc    |       1.800 |     0.020 |       0.000 |      0.020 |       NA    | Unspecified | NA         |
+| Vccadc    |       1.800 |     0.000 |       0.000 |      0.000 |       NA    | Unspecified | NA         |
 +-----------+-------------+-----------+-------------+------------+-------------+-------------+------------+
 
 
@@ -109,7 +109,7 @@ Table of Contents
 
 +-----------------------+--------------------------+
 | Ambient Temp (C)      | 25.0                     |
-| ThetaJA (C/W)         | 3.3                      |
+| ThetaJA (C/W)         | 3.4                      |
 | Airflow (LFM)         | 250                      |
 | Heat Sink             | medium (Medium Profile)  |
 | ThetaSA (C/W)         | 15.4                     |
@@ -138,11 +138,11 @@ Table of Contents
 +--------------+-----------+
 | Name         | Power (W) |
 +--------------+-----------+
-| TOP_MODULE   |     0.012 |
+| TOP_MODULE   |     0.013 |
 |   DUT        |     0.005 |
-|     DUT_03   |     0.004 |
-|       DUT    |     0.004 |
-|   MIDDLEWARE |     0.005 |
+|     DUT_03   |     0.005 |
+|       DUT    |     0.005 |
+|   MIDDLEWARE |     0.004 |
 +--------------+-----------+
 
 
