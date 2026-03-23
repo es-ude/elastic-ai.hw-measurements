@@ -5,7 +5,7 @@ from time import sleep
 @rc.main.command
 @click.pass_obj
 @click.argument("data", type=str)
-def my_custom_command(obj, data):
+def send_data(obj, data):
   rc_handle = rc.RemoteControl(obj)
   my_cmd_id = 250
   result = rc_handle.send_command(my_cmd_id, data, len(data))

@@ -63,7 +63,7 @@ async def top_module(dut):
         for _ in range(baudrate):
             await RisingEdge(dut.CLK_100MHz)
 
-        # Do SPI transmission (CPOL = 0, CPHA = 1, MSB = 1)
+        # Do SPI transmission (CPOL = 0, CPHA = 0, MSB = 1)
         dut.SPI_CSN.value = 0
         for _ in range(4):
             await RisingEdge(dut.CLK_100MHz)

@@ -68,7 +68,7 @@ always@(posedge CLK_SYS) begin
 		
 		case(state)
 		STATE_IDLE: begin
-			if(!CSN) begin
+			if(~CSN) begin
 				state <= STATE_SAMPLE;
 				buffer <= DFROM_MIDDLEWARE;
 				miso_bit <= (MSB) ? DFROM_MIDDLEWARE[BITWIDTH-'d1] : DFROM_MIDDLEWARE[0];

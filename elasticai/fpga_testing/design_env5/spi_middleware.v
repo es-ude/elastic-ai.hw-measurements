@@ -84,7 +84,7 @@ module SPI_MIDDLEWARE#(
             shift_test <= 2'd0;
             FIFO_DOUT <= 'd0;
 
-            LED_CONTROL <= 1'd0;
+            LED_CONTROL <= 1'd1;
             trigger_test <= 1'd0;
             DUT_SEL <= 'd0;
             DUT_RnW <= 1'd1;

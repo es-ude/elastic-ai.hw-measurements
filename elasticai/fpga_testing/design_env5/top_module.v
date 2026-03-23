@@ -1,6 +1,6 @@
 module TOP_MODULE#(
     parameter NUM_DUT = 5,
-    parameter SPI_BITWIDTH = 3*8,
+    parameter SPI_BITWIDTH = 24,
     parameter TEST_ENV_CMDS_BITWIDTH = 2,
     parameter TEST_ENV_ADR_WIDTH = 6,
     parameter TEST_ENV_DATA_BITWIDTH = 16
@@ -31,7 +31,7 @@ module TOP_MODULE#(
     
     //Interface for Debugging modules  
     assign FPGA_BUSY = ~dut_rdy;
-    assign LED[3:1] = {spi_mod_rdy, dut_rdy, RSTN};
+    assign LED[3:1] = {spi_mod_rdy, dut_rdy, SPI_CSN};
     
     //##########################################################
     //UNTER-MODULE: DEVICE UNDER TEST    
@@ -59,7 +59,7 @@ module TOP_MODULE#(
     SPI_SLAVE_WCLK#(
         .BITWIDTH(SPI_BITWIDTH),
         .CPOL(1'd0),
-        .CPHA(1'd1),
+        .CPHA(1'd0),
         .MSB(1'd1)
     ) SPI_MOD (
         .CLK_SYS(CLK_100MHz),
