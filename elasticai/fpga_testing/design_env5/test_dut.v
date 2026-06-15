@@ -1,7 +1,7 @@
 module TEST_ENVIRONMENT#(
     parameter BITWIDTH_DATA = 16,
     parameter BITWIDTH_ADR = 6,
-    parameter NUM_DUT = 5,
+    parameter NUM_DUT = 2,
     parameter NUM_BITS_HEADER = 32,
     parameter UINT_DATATYPE = 1
 )(
@@ -55,8 +55,8 @@ module TEST_ENVIRONMENT#(
         .DATA_VALID(rdy_filt[1])
     );    
         
-    SKELETON_MATH#(
-        .BITWIDTH_IN('d8),
+    SKELETON_RAM#(
+        .BITWIDTH_IN('d12),
         .BITWIDTH_SYS(BITWIDTH_DATA),
         .BITWIDTH_HEAD(BITWIDTH_HEAD),
         .BITWIDTH_ADR(BITWIDTH_ADR)

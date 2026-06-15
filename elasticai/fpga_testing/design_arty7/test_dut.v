@@ -1,7 +1,7 @@
 module TEST_ENVIRONMENT#(
     parameter BITWIDTH_DATA = 16,
     parameter BITWIDTH_ADR = 6,
-    parameter NUM_DUT = 5,
+    parameter NUM_DUT = 2,
     parameter NUM_BITS_HEADER = 32,
     parameter UINT_DATATYPE = 1
 )(
@@ -55,7 +55,7 @@ module TEST_ENVIRONMENT#(
         .DATA_VALID(rdy_filt[1])
     );    
         
-    SKELETON_ROM#(
+    SKELETON_RAM#(
         .BITWIDTH_IN('d16),
         .BITWIDTH_SYS(BITWIDTH_DATA),
         .BITWIDTH_HEAD(BITWIDTH_HEAD)
@@ -69,59 +69,5 @@ module TEST_ENVIRONMENT#(
 		.DATA_HEAD(head_array[2]),
 		.RDY(rdy_filt[2])
     );  
-    
-    SKELETON_RAM#(
-        .BITWIDTH_IN('d16),
-        .BITWIDTH_SYS(BITWIDTH_DATA),
-        .BITWIDTH_HEAD(BITWIDTH_HEAD),
-        .BITWIDTH_ADR(BITWIDTH_ADR)
-    ) DUT_03 (
-        .CLK_SYS(CLK),
-        .RSTN(RSTN),
-		.EN(SEL == 'd3),
-		.TRGG_START_CALC(START_FLAG),
-		.RnW(RnW),
-		.ADR(ADR),
-		.DATA_IN(DATA_IN),
-		.DATA_OUT(dout[3]),
-		.DATA_HEAD(head_array[3]),
-		.RDY(rdy_filt[3])    
-    );
-
-    SKELETON_MATH#(
-        .BITWIDTH_IN('d8),
-        .BITWIDTH_SYS(BITWIDTH_DATA),
-        .BITWIDTH_HEAD(BITWIDTH_HEAD),
-        .BITWIDTH_ADR(BITWIDTH_ADR)
-    ) DUT_04 (
-        .CLK_SYS(CLK),
-        .RSTN(RSTN),
-		.EN(SEL == 'd4),
-		.TRGG_START_CALC(START_FLAG),
-		.RnW(RnW),
-		.ADR(ADR),
-		.DATA_IN(DATA_IN),
-		.DATA_OUT(dout[4]),
-		.DATA_HEAD(head_array[4]),
-		.RDY(rdy_filt[4])
-    );
-
-    SKELETON_FUNC#(
-        .BITWIDTH_IN('d8),
-        .BITWIDTH_SYS(BITWIDTH_DATA),
-        .BITWIDTH_HEAD(BITWIDTH_HEAD),
-        .BITWIDTH_ADR(BITWIDTH_ADR)
-    ) DUT_05 (
-        .CLK_SYS(CLK),
-        .RSTN(RSTN),
-		.EN(SEL == 'd5),
-		.TRGG_START_CALC(START_FLAG),
-		.RnW(RnW),
-		.ADR(ADR),
-		.DATA_IN(DATA_IN),
-		.DATA_OUT(dout[5]),
-		.DATA_HEAD(head_array[5]),
-		.RDY(rdy_filt[5])
-    );
         
 endmodule

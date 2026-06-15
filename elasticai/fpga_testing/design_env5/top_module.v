@@ -1,6 +1,4 @@
 module TOP_MODULE#(
-    parameter NUM_DUT = 5,
-    parameter SPI_BITWIDTH = 24,
     parameter TEST_ENV_CMDS_BITWIDTH = 2,
     parameter TEST_ENV_ADR_WIDTH = 6,
     parameter TEST_ENV_DATA_BITWIDTH = 16
@@ -17,7 +15,10 @@ module TOP_MODULE#(
     input wire          SPI_SCLK,
     input wire          SPI_CSN
 );
+
+	localparam SPI_BITWIDTH = TEST_ENV_CMDS_BITWIDTH + TEST_ENV_ADR_WIDTH + TEST_ENV_DATA_BITWIDTH;
     localparam TEST_HEAD_BITWIDTH = 32;
+	localparam NUM_DUT = 2;
     
     //Signals for SPI module
     wire spi_mod_rdy;

@@ -47,13 +47,13 @@ assign en_module = EN && RSTN && ~TRGG_START_CALC;
 assign we_module = ~RnW;
 assign ram_din = DATA_IN[(BITWIDTH_SYS-'d1)-:BITWIDTH_IN];
 assign DATA_OUT = {ram_dout, {BITWIDTH_OFFSET{1'd0}}};
-assign RDY = 1'd1;
+assign RDY = 1'd1 && |DATA_IN[0+:(BITWIDTH_SYS-BITWIDTH_IN)];
 
 // --- DUT INTEGRATION (JUST REPLACE HERE)
 BRAM_SINGLE#(
     BITWIDTH_IN,
     NUM_POSITIONS,
-    ""
+    "bram_preload.mem"
 ) DUT (
     .CLK_RAM(CLK_SYS),
     .EN(en_module),
