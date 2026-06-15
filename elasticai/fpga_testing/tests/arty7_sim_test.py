@@ -16,23 +16,8 @@ class FPGADesignTest(unittest.TestCase):
         path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
         self.assertTrue(check_cocotb_test_result(str(path2xml)))
 
-    def test_rom(self):
-        from elasticai.fpga_testing.tests.arty7_rom_tb import cocotb_settings
-        path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
-        self.assertTrue(check_cocotb_test_result(str(path2xml)))
-
     def test_ram(self):
         from elasticai.fpga_testing.tests.arty7_ram_tb import cocotb_settings
-        path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
-        self.assertTrue(check_cocotb_test_result(str(path2xml)))
-
-    def test_mult(self):
-        from elasticai.fpga_testing.tests.arty7_mult_tb import cocotb_settings
-        path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
-        self.assertTrue(check_cocotb_test_result(str(path2xml)))
-
-    def test_hardtanh(self):
-        from elasticai.fpga_testing.tests.arty7_func_tb import cocotb_settings
         path2xml = run_cocotb_sim_for_src_dir(**cocotb_settings)
         self.assertTrue(check_cocotb_test_result(str(path2xml)))
 

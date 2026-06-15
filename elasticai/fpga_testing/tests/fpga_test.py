@@ -45,7 +45,7 @@ class TestingFPGA(unittest.TestCase):
         assert rslt.bitwidth_input == 16
         assert rslt.bitwidth_output == 16
 
-    def test_header_dut_rom(self):
+    def test_header_dut_bram(self):
         rslt = self.fpga_dut.get_dut_config(2)
         assert rslt.num_duts == 3
         assert rslt.dut_type == 2

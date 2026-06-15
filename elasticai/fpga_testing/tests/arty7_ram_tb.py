@@ -10,7 +10,7 @@ from elasticai.creator.testing.cocotb_runner import run_cocotb_sim_for_src_dir
 
 
 cocotb_settings = deepcopy(cocotb_settings_dev)
-cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'arty7_fpga'
+cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'designs' / 'arty7_fpga'
 cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.arty7_ram_tb"
 
 
@@ -22,7 +22,7 @@ async def top_module(dut):
     baudrate = dut.UART_CNT_BAUDRATE.value.to_unsigned() * dut.UART_MOD.NSAMP.value.to_unsigned()
     data_send_list = [
         ['00000100', '00000000', '00000001'],  # enable LED
-        ['00000010', '00000000', '00000110'],  # Select DUT #3
+        ['00000010', '00000000', '00000101'],  # Select DUT #2
         ['01000000', '00000000', '00000001'],  # Set data value on ADR = 0
         ['01000001', '00000000', '00000010'],  # Set data value on ADR = 1
         ['01000010', '00000000', '00000011'],  # Set data value on ADR = 2

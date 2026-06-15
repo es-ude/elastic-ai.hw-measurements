@@ -10,7 +10,7 @@ from elasticai.creator.testing.cocotb_runner import run_cocotb_sim_for_src_dir
 
 
 cocotb_settings = deepcopy(cocotb_settings_env5)
-cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'design_env5'
+cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'designs' / 'env5'
 cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.env5_led_tb"
 
 

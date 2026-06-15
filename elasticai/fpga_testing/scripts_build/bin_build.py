@@ -104,21 +104,3 @@ def translate_bit_to_bin(path_to_bitstream_folder: Path, path_to_source: Path) -
         new_path.append(path_to_source / f"{file.stem}.bin")
         write_into_bitstream_file(new_path[-1], content)
     return new_path
-
-
-def flash_bitstream_from_data(flash_bytes: bytes) -> None:
-    """Flashing the FPGA with bytes directly
-    :param flash_bytes:     Byte array with flash content
-    :return:                None
-    """
-    # Code is only working if configuration is SPI x1, no bus alignment, 8-bit
-    raise NotImplementedError
-
-
-def flash_bitstream_from_file(path_to_bitstream_file: Path) -> None:
-    """Flashing the FPGA with a full bitstream file (*.bit, *.bin)
-    :param path_to_bitstream_file:      Path to the generated bitstream file from AMD Vivado
-    :return:                            None
-    """
-    data = read_bitstream_file_amd(path_to_bitstream_file, remove_header=True)
-    flash_bitstream_from_data(data)
