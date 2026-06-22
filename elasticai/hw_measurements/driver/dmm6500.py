@@ -4,7 +4,7 @@ from time import sleep
 import pyvisa
 from serial.tools import list_ports
 
-from elasticai.hw_measurements.scan_instruments import scan_instruments
+from .scan_instruments import scan_instruments
 
 
 class DriverDMM6500:

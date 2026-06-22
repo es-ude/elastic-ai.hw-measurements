@@ -6,8 +6,9 @@ import pyvisa
 from RsInstrument import RsInstrument
 from serial.tools import list_ports
 
-from elasticai.hw_measurements.scan_instruments import scan_instruments
 from elasticai.hw_measurements.units import MHz, Threeway, mHz
+
+from .scan_instruments import scan_instruments
 
 
 class DriverMXO4X:

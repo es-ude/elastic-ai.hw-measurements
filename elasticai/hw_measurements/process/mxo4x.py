@@ -26,9 +26,9 @@ def load_fra_data(path2file: Path, begin_line: int = 2) -> FrequencyResponse:
     :param begin_line:  Integer of starting line to extract information from csv
     :return:            Dataclass with FrequencyResponse
     """
-    data = CsvHandler(path=path2file.parent, file_name=path2file.stem, delimiter=",").read_data_from_csv(
-        include_chapter_line=False, start_line=begin_line, type_load=float
-    )
+    data = CsvHandler(
+        path=path2file.parent.as_posix(), file_name=path2file.stem, delimiter=","
+    ).read_data_from_csv(include_chapter_line=False, start_line=begin_line, type_load=float)
     return FrequencyResponse(
         freq=data[:, 1],
         gain=data[:, 2],

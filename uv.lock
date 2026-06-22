@@ -604,24 +604,19 @@ wheels = [
 [[package]]
 name = "elasticai-creator"
 version = "0.68.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/es-ude/elastic-ai.creator.git?branch=main#0960c907f4ba34957c9c4fa512b202907d8ddf5b" }
 dependencies = [
-    { name = "click" },
     { name = "cocotb" },
     { name = "numpy" },
     { name = "pytest" },
     { name = "tomlkit" },
     { name = "torch" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/be/b5/02a980e8d969e6b35aa827ebeb64927744da9d906c0e70da8be6736346ae/elasticai_creator-0.68.0.tar.gz", hash = "sha256:83c269c0abc42825faae1dd33a2d4ddbd110404f788840ec68463b45199d39e6", size = 804441, upload-time = "2026-04-25T15:15:29.688Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/d2/4937fe4fb01128f68ae7561e84d50d53137e05d869c4b09d69b57f1bfc20/elasticai_creator-0.68.0-py3-none-any.whl", hash = "sha256:eb3794b95a3c071908e9924455a7bdd89604b3140791789c767a27c215879da7", size = 725668, upload-time = "2026-04-25T15:15:27.996Z" },
-]
 
 [[package]]
 name = "elasticai-experiment-framework"
 version = "0.2.0"
-source = { git = "https://github.com/es-ude/elastic-ai.experiment-framework.git#53831d441352e950ea50d2bcf4d4375cc6f74af5" }
+source = { git = "https://github.com/es-ude/elastic-ai.experiment-framework.git?branch=main#53831d441352e950ea50d2bcf4d4375cc6f74af5" }
 dependencies = [
     { name = "click" },
     { name = "fabric" },
@@ -685,7 +680,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "elasticai-creator", specifier = ">=0.67.0" },
+    { name = "elasticai-creator", git = "https://github.com/es-ude/elastic-ai.creator.git?branch=main" },
     { name = "h5py", specifier = ">=3.14.0" },
     { name = "matplotlib", specifier = ">=3.10.3" },
     { name = "numpy", specifier = ">=2.2.2" },
@@ -718,7 +713,7 @@ docs = [
     { name = "sphinxcontrib-mermaid", specifier = ">=1.0.0" },
     { name = "sphinxext-opengraph", specifier = ">=0.9.1" },
 ]
-fpga = [{ name = "elasticai-experiment-framework", git = "https://github.com/es-ude/elastic-ai.experiment-framework.git" }]
+fpga = [{ name = "elasticai-experiment-framework", git = "https://github.com/es-ude/elastic-ai.experiment-framework.git?branch=main" }]
 lint = [
     { name = "pip-audit", specifier = ">=2.10.1" },
     { name = "ruff", specifier = ">=0.15.14" },

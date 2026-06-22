@@ -191,7 +191,7 @@ class MetricCalculator(ProcessCommon):
         """
         if isinstance(y_true, np.ndarray):
             assert y_pred.shape == y_true.shape, "Dimension / shape mismatch"
-            return float(np.sum(np.abs(y_true - y_pred) / np.abs(y_true)) / y_true.size)
+            return float(np.sum(np.abs(y_true - y_pred) / np.abs(y_true)) / float(y_true.size))
         else:
             return float(abs(y_true - y_pred) / abs(y_true))
 
