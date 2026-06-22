@@ -200,7 +200,7 @@ in {
         ${uv_run} pytest -m 'hardware' --reruns 1
       '';
     };
-    "test:hardware" = {
+    "test:simulation" = {
       exec = ''
         ${uv_run} pytest -m 'simulation' --reruns 1
       '';
@@ -254,7 +254,9 @@ in {
   };
 
   enterShell = ''
+    echo ""
     check_oss_cad_available
     source_oss_cad
+    echo ""
   '';
 }
