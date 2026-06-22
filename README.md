@@ -62,10 +62,6 @@ The device freezes upon the detection of a USB (dis-)connection event and will
 cease all functionality on firmware version 2.4.2.1. The only fix is cutting
 power to the device by holding the power button or plugging it from the socket.
 
-## Build your Script for automated Testing and Plotting
-Here is an example for building the test routine of a quantization front-end (it includes a multiplexer, pre-amplifier and analog-digital converter).  
-Examples of the test routine are in the template folder.
-
 ## Building FPGA designs for testing
 We will provide a basic structure for testing FPGA designs on
 1. Digilent Arty-A7 boards ([Link](https://digilent.com/reference/programmable-logic/arty-a7/start?srsltid=AfmBOoqeya_KoM1qKi6M-j7AMEs77-xNVkFL-W1l7ACA632gUgNiiGkL))

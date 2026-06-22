@@ -1,12 +1,14 @@
-from os.path import join, dirname, basename
 from glob import glob
+from logging import Logger, getLogger
+from os.path import basename, dirname, join
 from time import sleep
-from logging import getLogger, Logger
-from elasticai.hw_measurements import get_path_to_project, init_project_folder, DriverPort, DriverPortIES
-from elasticai.hw_measurements.driver import DriverDMM6500
-from elasticai.hw_measurements.charac.dac import CharacterizationDAC
+
 # PYTHON API OF THE DUT HAVE TO BE INCLUDED
 from src import DriverDUT
+
+from elasticai.hw_measurements import DriverPort, DriverPortIES, get_path_to_project, init_project_folder
+from elasticai.hw_measurements.charac.dac import CharacterizationDAC
+from elasticai.hw_measurements.driver import DriverDMM6500
 
 
 class TestHandlerDAC:
@@ -17,9 +19,15 @@ class TestHandlerDAC:
     _en_debug: bool = False
     _file_name: str
     _folder_name: str
-    _search_index: str='dac'
+    _search_index: str = "dac"
 
-    def __init__(self, com_dut: str, com_sets: DriverPort=DriverPortIES, en_debug: bool=False, only_plot: bool=False) -> None:
+    def __init__(
+        self,
+        com_dut: str,
+        com_sets: DriverPort = DriverPortIES,
+        en_debug: bool = False,
+        only_plot: bool = False,
+    ) -> None:
         """Class for handling the Analog-Digital-Converter test routine
         :param com_dut:     String with COM-Port of DUT board
         :param com_sets:    Class with COM-Ports of laboratory devices
@@ -29,28 +37,24 @@ class TestHandlerDAC:
         init_project_folder()
         self._hndl_test = CharacterizationDAC()
         system_id = int(self._hndl_test.settings.system_id)
-        self._file_name = f'{self._hndl_test.settings.get_date_string()}_{self._search_index}_charac_id-{system_id:03d}'
+        self._file_name = (
+            f"{self._hndl_test.settings.get_date_string()}_{self._search_index}_charac_id-{system_id:03d}"
+        )
         self._folder_name = join(get_path_to_project(), "runs")
 
         if not only_plot:
-            self._hndl_dut = DriverDUT(
-                port=com_dut,
-                timeout=1.0
-            )
+            self._hndl_dut = DriverDUT(port=com_dut, timeout=1.0)
         self._en_debug = en_debug
         if not self._en_debug and not only_plot:
             self._hndl_daq = DriverDMM6500()
-            self._hndl_daq.serial_start_known_target(
-                resource_name=com_sets.com_dmm,
-                do_reset=True
-            )
+            self._hndl_daq.serial_start_known_target(resource_name=com_sets.com_dmm, do_reset=True)
             self._hndl_daq.do_beep()
 
     def get_overview_folder(self) -> list:
         """Function to get an overview of available numpyz files"""
         return glob(join(self._folder_name, "*.npz"))
 
-    def run_transfer_test(self, get_voltage: bool=True) -> dict:
+    def run_transfer_test(self, get_voltage: bool = True) -> dict:
         """Function for running the ADC test on DUT device
         :return:            Dictionary with ['stim': DAC input stream, 'settings': Settings, 'ch<X>': DAQ results with 'val' and 'std']
         """
@@ -58,7 +62,9 @@ class TestHandlerDAC:
         results = self._hndl_test.run_test_dac_transfer(
             func_mux=self._hndl_dut.change_adc_mux,
             func_dac=self._hndl_test.dummy_set_daq,
-            func_daq=(self._hndl_daq.get_voltage if get_voltage else self._hndl_daq.get_current) if not self._en_debug else self._hndl_test.dummy_get_daq,
+            func_daq=(self._hndl_daq.get_voltage if get_voltage else self._hndl_daq.get_current)
+            if not self._en_debug
+            else self._hndl_test.dummy_get_daq,
             func_beep=self._hndl_daq.do_beep if not self._en_debug else self._hndl_test.dummy_beep,
         )
         self._hndl_test.save_results(
@@ -75,9 +81,7 @@ class TestHandlerDAC:
         :return:            None
         """
         self._hndl_test.plot_characteristic_results_direct(
-            data=results,
-            file_name=self._file_name,
-            path=self._folder_name
+            data=results, file_name=self._file_name, path=self._folder_name
         )
 
     def plot_results_from_file(self, path2file: str) -> None:
@@ -87,17 +91,13 @@ class TestHandlerDAC:
         """
         if self._search_index in path2file:
             self._hndl_test.plot_characteristic_results_from_file(
-                path=dirname(path2file),
-                file_name=basename(path2file)
+                path=dirname(path2file), file_name=basename(path2file)
             )
+
 
 def run_test() -> None:
     bool_only_plot = False
-    hndl = TestHandlerDAC(
-        com_dut='COM7',
-        en_debug=False,
-        only_plot=bool_only_plot
-    )
+    hndl = TestHandlerDAC(com_dut="COM7", en_debug=False, only_plot=bool_only_plot)
 
     if not bool_only_plot:
         data = hndl.run_transfer_test()
