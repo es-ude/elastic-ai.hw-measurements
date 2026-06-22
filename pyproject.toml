@@ -1,98 +1,165 @@
+[project]
+name = "elasticai.hw-measurements"
+description = "Python API for handling measurement devices to enable automated hardware testing"
+readme = "README.md"
+requires-python = ">=3.12, <3.14"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de" },
+]
+keywords = [
+  "characterization",
+  "deep learning",
+  "embedded systems",
+  "preprocessing",
+  "test-on-hardware",
+]
+dependencies = [
+  "elasticai-creator>=0.67.0",
+  "h5py>=3.14.0",
+  "matplotlib>=3.10.3",
+  "numpy>=2.2.2",
+  "pyserial>=3.5",
+  "pyvisa>=1.14.1",
+  "pyvisa-py>=0.7.2",
+  "pyyaml>=6.0.2",
+  "rsinstrument>=1.90.0",
+  "scipy>=1.15.3",
+  "tqdm>=4.67.1",
+]
+dynamic = ["version"]
+
+[dependency-groups]
+dev = [
+  "build>=1.2.2.post1",
+  "coverage>=7.11.3",
+  "hatch>=1.14.0",
+  "hatch-vcs>=0.4.0",
+  "hatchling>=1.27.0",
+]
+docs = [
+  "myst-parser>=4.0.0",
+  "pydata-sphinx-theme>=0.16.1",
+  "sphinx>=8.1.3",
+  "sphinx-autodoc2>=0.5.0",
+  "sphinx-copybutton>=0.5.2",
+  "sphinx-design>=0.6.1",
+  "sphinx-prompt>=1.9.0",
+  "sphinx-togglebutton>=0.3.2",
+  "sphinxcontrib-mermaid>=1.0.0",
+  "sphinxext-opengraph>=0.9.1",
+]
+fpga = [
+  "elasticai-experiment-framework",
+]
+lint = [
+  "pip-audit>=2.10.1",
+  "ruff>=0.15.14",
+  "tombi>=1.1.3",
+  "ty>=0.0.41",
+]
+test = [
+  "coverage>=7.6.9",
+  "hypothesis>=6.124.7",
+  "pytest>=8.3.4",
+  "pytest-cov>=6.0.0"
+]
+
 [build-system]
-requires = ["hatchling", "hatch-vcs", "wheel"]
+requires = ["hatch-vcs", "hatchling", "wheel"]
 build-backend = "hatchling.build"
 
+[tool.coverage.run]
+source = ["elasticai"]
+relative_files = true
+omit = [
+  "**/*_test.py",
+  "**/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  "def plot_",
+  "raise",
+  "case _:",
+]
 
 [tool.hatch.version]
 source = "vcs"
 
-
 [tool.hatch.build.targets.sdist]
-where = ["."]
 include = ["elasticai"]
-exclude = ['*_test.py', 'hardware', 'example', 'test_data', 'runs', 'run_tests.py']
-namespaces = false
-
+exclude = [
+  "*_test.py",
+  "hardware",
+  "example",
+  "test_data",
+  "runs",
+  "run_tests.py"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["elasticai"]
-exclude = ['*_test.py', 'hardware', 'example', 'test_data', 'runs', 'run_tests.py']
-only-packages = true
-
-
-[project]
-name = "elasticai.hw-measurements"
-dynamic = ["version"]
-description = "Python API for handling measurement devices to enable automated hardware testing"
-readme = "README.md"
-license =  {file = "LICENSE"}
-requires-python = ">=3.12"
-authors = [
-  {name = "Andreas Erbsloeh", email = "andreas.erbsloeh@uni-due.de"},
-]
-maintainers = [
-    {name = 'Ismail Yilmaz', email = 'ismail.yilmaz@stud.uni-due.de'}
-]
-dependencies = [
-    "elasticai-experiment-framework",
-    "fxpmath>=0.4.9",
-    "h5py>=3.14.0",
-    "matplotlib>=3.10.3",
-    "numpy>=2.2.2",
-    "pyserial>=3.5",
-    "pytest>=9.0.1",
-    "pyvisa>=1.14.1",
-    "pyvisa-py>=0.7.2",
-    "pyyaml>=6.0.2",
-    "rsinstrument>=1.90.0",
-    "scipy>=1.15.3",
-    "tqdm>=4.67.1",
+exclude = [
+  "*_test.py",
+  "hardware",
+  "example",
+  "test_data",
+  "runs",
+  "run_tests.py"
 ]
 
+[tool.pytest]
+markers = [
+  "hardware: slow running system tests using real hardware",
+  "simulation: a slow simulation test"
+]
+minversion = "9.0"
+norecursedirs = []
+python_files = ["*_test.py"]
+pythonpath = ["."]
+testpaths = ["elasticai/*"]
+
+[tool.ruff]
+include = [
+  "pyproject.toml",
+  "elasticai/**/*.py",
+]
+exclude = [".venv", "artefact", "docs", "example", "test_data"]
+# Same as Black.
+line-length = 106
+indent-width = 4
+target-version = "py313"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["E4", "E7", "E9", "F", "I"]
+ignore = ["D101", "D102", "E741", "E721", "E722"]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+[tool.ty.src]
+include = ["elasticai"]
+exclude = [
+  "elasticai/**/*_test.py",
+]
 
 [tool.uv]
-default-groups = ["dev", "docs", "fpga", "testing"]
-
+default-groups = ["dev", "docs", "fpga", "lint", "test"]
 
 [tool.uv.sources]
 elasticai-experiment-framework = { git = "https://github.com/es-ude/elastic-ai.experiment-framework.git" }
-
-
-[dependency-groups]
-dev = [
-    "hatch>=1.14.0",
-    "hatch-vcs>=0.4.0",
-    "hatchling>=1.27.0",
-    "wheel>=0.45.1",
-]
-fpga = [
-    "elasticai-creator>=0.67.0",
-]
-testing = [
-    "pytest>=8.3.4",
-    "hypothesis>=6.124.7",
-    "pytest-cov>=6.0.0",
-    "coverage>=7.6.9"
-]
-docs = [
-    "myst-parser>=4.0.0",
-    "sphinx>=8.1.3",
-    "sphinx-autodoc2>=0.5.0",
-    "sphinx-prompt>=1.9.0",
-    "sphinx-design>=0.6.1",
-    "sphinx-togglebutton>=0.3.2",
-    "sphinx-copybutton>=0.5.2",
-    "sphinxext-opengraph>=0.9.1",
-    "sphinxcontrib-mermaid>=1.0.0",
-    "pydata-sphinx-theme>=0.16.1",
-]
-
-
-[tool.pytest.ini_options]
-minversion = "6.0"
-markers = [
-    "hardware: slow running system tests using real hardware"
-]
-testpaths = ["elasticai/hw-measurements"]
-python_files = ["*_test.py"]
-addopts = "--import-mode=importlib"
