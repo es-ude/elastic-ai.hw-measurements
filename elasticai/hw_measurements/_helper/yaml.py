@@ -1,35 +1,40 @@
-import yaml
-from logging import getLogger, Logger
+from logging import Logger, getLogger
+from pathlib import Path
 from typing import Any
-from os import makedirs
-from os.path import join, exists
+
+import yaml
+
 from elasticai.hw_measurements import get_path_to_project
 
 
 class YamlConfigHandler:
-    __path2yaml_folder: str
+    __path2yaml_folder: Path
     __yaml_name: str
     __logger: Logger = getLogger(__name__)
 
     @property
-    def path2chck(self) -> str:
+    def path2chck(self) -> Path:
         """Getting the path to the desired YAML file"""
-        return join(self.__path2yaml_folder, f"{self.__yaml_name}.yaml")
+        return self.__path2yaml_folder / f"{self.__yaml_name}.yaml"
 
-    def __init__(self, yaml_template: Any | dict, path2yaml='config', yaml_name='Config_Train'):
+    def __init__(self, yaml_template: Any | dict, path2yaml="config", yaml_name="Config_Train"):
         """Creating a class for handling YAML files
         Args:
             yaml_template:      Dummy dataclass with entries or dictionary (is only generated if YAML not exist)
             path2yaml:          String with path to the folder which has the YAML file [Default: '']
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
         """
-        self.__path2yaml_folder = join(get_path_to_project(), path2yaml)
+        self.__path2yaml_folder = get_path_to_project() / path2yaml
         self.__yaml_name = self.__remove_ending_from_filename(yaml_name)
         self._template = yaml_template
 
-        makedirs(self.__path2yaml_folder, exist_ok=True)
-        if not exists(self.path2chck):
-            data2yaml = yaml_template if isinstance(yaml_template, dict) else self.translate_dataclass_to_dict(yaml_template)
+        self.__path2yaml_folder.mkdir(parents=True, exist_ok=True)
+        if not self.path2chck.exists():
+            data2yaml = (
+                yaml_template
+                if isinstance(yaml_template, dict)
+                else self.translate_dataclass_to_dict(yaml_template)
+            )
             self.write_dict_to_yaml(data2yaml)
             self.__logger.info("... created new yaml file in folder!")
 
@@ -40,7 +45,7 @@ class YamlConfigHandler:
         :return:
             String with file name without data type ending
         """
-        yaml_ending_chck = ['.yaml', '.yml']
+        yaml_ending_chck = [".yaml", ".yml"]
         yaml_file_name = file_name
         for yaml_end in yaml_ending_chck:
             if yaml_end in yaml_file_name:
@@ -51,8 +56,11 @@ class YamlConfigHandler:
     @staticmethod
     def translate_dataclass_to_dict(class_content: type) -> dict:
         """Translating all class variables with default values into dict"""
-        return {key: value for key, value in class_content.__dict__.items()
-                if not key.startswith('__') and not callable(key)}
+        return {
+            key: value
+            for key, value in class_content.__dict__.items()
+            if not key.startswith("__") and not callable(key)
+        }
 
     def __check_scheme_validation(self, template: type | dict, real_file: type | dict) -> bool:
         """Function for validating the key entries from template yaml and real yaml file
@@ -61,8 +69,12 @@ class YamlConfigHandler:
         :return:
             Boolean decision if both key are equal
         """
-        template_used = self.translate_dataclass_to_dict(template) if not isinstance(template, dict) else template
-        real_used = self.translate_dataclass_to_dict(real_file) if not isinstance(real_file, dict) else real_file
+        template_used = (
+            self.translate_dataclass_to_dict(template) if not isinstance(template, dict) else template
+        )
+        real_used = (
+            self.translate_dataclass_to_dict(real_file) if not isinstance(real_file, dict) else real_file
+        )
 
         equal_chck = template_used.keys() == real_used.keys()
         if not equal_chck:
@@ -70,7 +82,7 @@ class YamlConfigHandler:
         else:
             return template_used.keys() == real_used.keys()
 
-    def write_dict_to_yaml(self, config_data: dict, print_output: bool=False) -> None:
+    def write_dict_to_yaml(self, config_data: dict, print_output: bool = False) -> None:
         """Writing list with configuration sets to YAML file
         Args:
             config_data:    Dict. with configuration
@@ -78,8 +90,8 @@ class YamlConfigHandler:
         Returns:
             None
         """
-        makedirs(self.__path2yaml_folder, exist_ok=True)
-        with open(self.path2chck, 'w') as f:
+        self.__path2yaml_folder.mkdir(parents=True, exist_ok=True)
+        with open(self.path2chck, "w") as f:
             yaml.dump(config_data, f, sort_keys=False)
 
         if print_output:
@@ -96,11 +108,11 @@ class YamlConfigHandler:
         Returns:
             Dict. with configuration
         """
-        if not exists(self.path2chck):
+        if not self.path2chck.exists():
             raise FileNotFoundError("YAML does not exists - Please create one!")
         else:
             # --- Reading YAML file
-            with open(self.path2chck, 'r') as f:
+            with open(self.path2chck, "r") as f:
                 config_data = yaml.safe_load(f)
             self.__logger.debug(f"... read YAML file: {self.path2chck}")
 

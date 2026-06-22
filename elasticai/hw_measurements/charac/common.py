@@ -1,8 +1,9 @@
-import numpy as np
-from logging import getLogger, Logger
+from logging import Logger, getLogger
 from os import makedirs
 from os.path import join
-from random import random, randint
+from random import randint, random
+
+import numpy as np
 
 
 class CharacterizationCommon:
@@ -55,7 +56,7 @@ class CharacterizationCommon:
         :param data:    Integer with DAC data
         :return:        None
         """
-        return randint(a=0, b=(2**16)-1)
+        return randint(a=0, b=(2**16) - 1)
 
     @staticmethod
     def dummy_get_daq() -> float:
@@ -81,10 +82,7 @@ class CharacterizationCommon:
         """
         makedirs(folder_name, exist_ok=True)
         np.savez_compressed(
-            file=join(folder_name, f'{file_name}.npz'),
-            allow_pickle=True,
-            data=data,
-            settings=settings
+            file=join(folder_name, f"{file_name}.npz"), allow_pickle=True, data=data, settings=settings
         )
         self._logger.debug(f"Saved results in folder: {folder_name}")
         self._logger.debug(f"Saved measured with {len(data)} entries")

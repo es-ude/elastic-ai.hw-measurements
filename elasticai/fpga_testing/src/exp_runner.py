@@ -2,9 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from time import time_ns
+
 from tqdm import tqdm
 
-from elasticai.fpga_testing.src.helper import get_path_to_project
+from elasticai.fpga_testing.helper import get_path_to_project
 from elasticai.fpga_testing.src.exp_dut import DeviceUnderTestHandler
 from elasticai.fpga_testing.src.yaml_handler import YamlConfigHandler
 
@@ -16,20 +17,21 @@ class ExperimentSettings:
         com_port:       String with COM port name
         selected_dut:   List with DUT numbers for testing
     """
+
     com_port: str
     selected_dut: list
 
 
 class ExperimentMain:
     _device: DeviceUnderTestHandler
-    __device_buf:       int
-    __path2run:         Path
+    __device_buf: int
+    __path2run: Path
     _settings: ExperimentSettings
     _type_experiment: str
     _buffer_data_send: list
     _buffer_data_get: bytes
 
-    def __init__(self, buffer_size:int=10) -> None:
+    def __init__(self, buffer_size: int = 10) -> None:
         """Class for handling the Experiment Main Setup
         Args:
             buffer_size:    Number of transmission which will be done once using Serial Package
@@ -37,15 +39,12 @@ class ExperimentMain:
         Returns:
             None
         """
-        DefaultSettings = ExperimentSettings(
-            com_port="AUTOCOM",
-            selected_dut=[1, 2]
-        )
+        DefaultSettings = ExperimentSettings(com_port="AUTOCOM", selected_dut=[1, 2])
         yaml_data = YamlConfigHandler(
             yaml_template=DefaultSettings,
-            path2yaml='config',
-            yaml_name=f'Config_Exp',
-            start_folder=get_path_to_project()
+            path2yaml="config",
+            yaml_name="Config_Exp",
+            start_folder=get_path_to_project(),
         )
         self._settings = yaml_data.get_class(ExperimentSettings)
         self.__device_buf = buffer_size
@@ -66,20 +65,20 @@ class ExperimentMain:
         result = self._device.get_dut_config_all(print_results=print_results)
         return [info.dut_type for info in result.values()]
 
-    def __generate_saving_folder(self, index='') -> None:
+    def __generate_saving_folder(self, index="") -> None:
         """Generating the folder for saving the results"""
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        folder = timestamp + f'{self._type_experiment}{index}'
-        self.__path2run = Path(get_path_to_project('runs')) / folder
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        folder = timestamp + f"{self._type_experiment}{index}"
+        self.__path2run = Path(get_path_to_project("runs")) / folder
         self.__path2run.mkdir(parents=True, exist_ok=True)
 
-    def init_experiment(self, index='', generate_folder:bool=True) -> str:
+    def init_experiment(self, index="", generate_folder: bool = True) -> str:
         """Initialization of the experiment with enabling the communication"""
         if generate_folder:
             self.__generate_saving_folder(index)
             return self.get_path2run
         else:
-            return ''
+            return ""
 
     def do_inference(self, device_test: int) -> float:
         """Doing the inference from Computer to Device for testing accelerators with number of selected target"""
@@ -92,7 +91,7 @@ class ExperimentMain:
             # --- Active data transmission
             process_duration = time_ns()
             for data in (pbar := tqdm(self._buffer_data_send)):
-                pbar.set_description(f"Processing")
+                pbar.set_description("Processing")
                 self._buffer_data_get += self._device.do_inference(data)
             process_duration = time_ns() - process_duration
             # --- Delay for getting last samples

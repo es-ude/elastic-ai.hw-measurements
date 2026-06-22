@@ -1,13 +1,14 @@
+from logging import Logger, getLogger
+
 import numpy as np
-from dataclasses import dataclass
-from logging import getLogger, Logger
 from scipy.signal import find_peaks
 from scipy.signal.windows import gaussian
-from elasticai.hw_measurements import TransformSpectrum, TransientData
+
+from elasticai.hw_measurements import TransformSpectrum
 from elasticai.hw_measurements.process.common import ProcessCommon
 
 
-def window_method(window_size: int, method: str="hamming") -> np.ndarray:
+def window_method(window_size: int, method: str = "hamming") -> np.ndarray:
     """Generating window for smoothing transformation method.
     :param window_size:     Integer number with size of the window
     :param method:          Selection of window method ['': None, 'Hamming', 'guassian', 'bartlett', 'blackman']
@@ -28,7 +29,7 @@ def window_method(window_size: int, method: str="hamming") -> np.ndarray:
     return window
 
 
-def do_fft(y: np.ndarray, fs: float, method_window: str='') -> TransformSpectrum:
+def do_fft(y: np.ndarray, fs: float, method_window: str = "") -> TransformSpectrum:
     """Performing the Discrete Fast Fourier Transformation.
     :param y:   Transient input signal
     :param fs:  Sampling rate [Hz]
@@ -48,14 +49,10 @@ def do_fft(y: np.ndarray, fs: float, method_window: str='') -> TransformSpectrum
     xsel = np.where(freq >= 0)
     fft_out = fft_out[xsel]
     freq = freq[xsel]
-    return TransformSpectrum(
-        freq=freq,
-        spec=fft_out,
-        sampling_rate=fs
-    )
+    return TransformSpectrum(freq=freq, spec=fft_out, sampling_rate=fs)
 
 
-def calculate_total_harmonics_distortion(data: TransformSpectrum, N_harmonics: int=4) -> float:
+def calculate_total_harmonics_distortion(data: TransformSpectrum, N_harmonics: int = 4) -> float:
     """Calculating the Total Harmonics Distortion (THD) of spectral input
     :param data:        Dataclass TransformSpectrum
     :param N_harmonics: Number of used harmonics for calculating THD
@@ -77,7 +74,9 @@ def calculate_total_harmonics_distortion(data: TransformSpectrum, N_harmonics: i
     return float(20 * np.log10(np.sqrt(np.sum(np.power(peaks_y[1:], 2))) / peaks_y[0]))
 
 
-def calculate_total_harmonics_distortion_from_transient(signal: np.ndarray, fs: float, N_harmonics: int=4) -> float:
+def calculate_total_harmonics_distortion_from_transient(
+    signal: np.ndarray, fs: float, N_harmonics: int = 4
+) -> float:
     """Calculating the Total Harmonics Distortion (THD) from transient input
     Args:
         signal:         Array with frequency values for spectral analysis
@@ -86,14 +85,8 @@ def calculate_total_harmonics_distortion_from_transient(signal: np.ndarray, fs: 
     Return:
           THD value (in dB)
     """
-    spectrum = do_fft(
-        y=signal,
-        fs=fs
-    )
-    return calculate_total_harmonics_distortion(
-        data=spectrum,
-        N_harmonics=N_harmonics
-    )
+    spectrum = do_fft(y=signal, fs=fs)
+    return calculate_total_harmonics_distortion(data=spectrum, N_harmonics=N_harmonics)
 
 
 class MetricCalculator(ProcessCommon):
@@ -109,10 +102,7 @@ class MetricCalculator(ProcessCommon):
         :param daq_output:  Numpy array with DAQ output
         :return:        Float with LSB
         """
-        return float(np.mean(self.calculate_lsb(
-            stim_input=stim_input,
-            daq_output=daq_output
-        ), axis=0))
+        return float(np.mean(self.calculate_lsb(stim_input=stim_input, daq_output=daq_output), axis=0))
 
     @staticmethod
     def calculate_gain_from_transfer(stim_input: np.ndarray, src_output: np.ndarray) -> np.ndarray:
@@ -123,7 +113,6 @@ class MetricCalculator(ProcessCommon):
         """
         assert src_output.shape == stim_input.shape, "Dimension / shape mismatch"
         return np.diff(src_output) / np.diff(stim_input)
-
 
     @staticmethod
     def calculate_lsb(stim_input: np.ndarray, daq_output: np.ndarray) -> np.array:
@@ -141,7 +130,10 @@ class MetricCalculator(ProcessCommon):
         :param daq_output:  Numpy array with DAQ output
         :return:            Numpy array with DNL
         """
-        return self.calculate_lsb(stim_input, daq_output) / self.calculate_lsb_mean(stim_input, daq_output) - 1
+        return (
+            self.calculate_lsb(stim_input, daq_output) / self.calculate_lsb_mean(stim_input, daq_output)
+            - 1
+        )
 
     def calculate_inl(self, stim_input: np.ndarray, daq_output: np.ndarray) -> np.ndarray:
         """Calculating the Integral Non-Linearity (INL) of a transfer function from DAC/ADC
@@ -212,11 +204,7 @@ class MetricCalculator(ProcessCommon):
         :return:            THD value (in dB)
         """
         # --- calculate spectral input
-        spectral: TransformSpectrum = do_fft(
-            y=signal,
-            fs=fs,
-            method_window='hamming'
-        )
+        spectral: TransformSpectrum = do_fft(y=signal, fs=fs, method_window="hamming")
 
         # --- Limiting the search space
         fsine = float(spectral.freq[np.argmax(spectral.spec).flatten()][0])

@@ -1,22 +1,22 @@
 from pathlib import Path
 
 
-def read_bitstream_file_amd(path_to_bitstream_file: Path, remove_header: bool=True) -> bytes:
+def read_bitstream_file_amd(path_to_bitstream_file: Path, remove_header: bool = True) -> bytes:
     """Reading the content of a bitstream file (*.bit, *.bin) compiled from AMD Vivado for AMD FPGAs
     :param path_to_bitstream_file:      Path to the bitstream file
     :param remove_header:               Boolean for removing the header information
     :return:                            Byte array with flash content
     """
-    if not path_to_bitstream_file.suffix in ['.bin', '.bit']:
-        raise ValueError('Bit file must be in binary format')
+    if path_to_bitstream_file.suffix not in [".bin", ".bit"]:
+        raise ValueError("Bit file must be in binary format")
 
     data = path_to_bitstream_file.read_bytes()
     if remove_header:
-        header = b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
+        header = b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
         pos0 = data.find(header)
         if pos0 == -1:
             raise Exception("No padding words")
-        sync = b'\xAA\x99\x55\x66'
+        sync = b"\xaa\x99\x55\x66"
         pos1 = data.find(sync)
         if pos1 == -1:
             raise Exception("Sync word not found")
@@ -29,8 +29,8 @@ def read_bitstream_file_lattice(path_to_bitstream_file: Path) -> bytes:
     :param path_to_bitstream_file:      Path to the bitstream file
     :return:                            Byte array with flash content
     """
-    if not path_to_bitstream_file.suffix in ['.bin']:
-        raise ValueError('Bit file must be in binary format (bin)')
+    if path_to_bitstream_file.suffix not in [".bin"]:
+        raise ValueError("Bit file must be in binary format (bin)")
     return path_to_bitstream_file.read_bytes()
 
 
@@ -40,34 +40,34 @@ def write_into_bitstream_file(path_to_file: Path, data: bytes) -> None:
     :param data:            Byte array with flash content
     :return:                None
     """
-    if not path_to_file.suffix in ['.bin', '.bit']:
-        raise ValueError('Bit file must be in binary format')
+    if path_to_file.suffix not in [".bin", ".bit"]:
+        raise ValueError("Bit file must be in binary format")
 
     with open(path_to_file, "wb") as f:
         f.write(data)
 
 
-def write_into_bitstream_text(path_to_file: Path, data: bytes, add_lines: bool=True) -> None:
+def write_into_bitstream_text(path_to_file: Path, data: bytes, add_lines: bool = True) -> None:
     """Writing the FPGA flash into text file in order to read content
     :param path_to_file:    Path to the new generated bitstream file
     :param data:            Byte array with flash content
     :param add_lines:       Boolean for adding line numbers into text file
     :return:                None
     """
-    new_file = path_to_file.with_suffix('.txt')
+    new_file = path_to_file.with_suffix(".txt")
     symbol_per_line = 16
     with open(new_file, "w") as f:
         for i in range(0, len(data), symbol_per_line):
-            chunk = data[i:i + symbol_per_line]
+            chunk = data[i : i + symbol_per_line]
             hex_bytes = " ".join(f"{b:02X}" for b in chunk)
             if add_lines:
-                f.write(f"{int(i/symbol_per_line):08X}  {hex_bytes}\n")
+                f.write(f"{int(i / symbol_per_line):08X}  {hex_bytes}\n")
             else:
                 f.write(f"{hex_bytes}\n")
 
 
 def write_bitstream_into_cheader(path_to_file: Path, data: bytes) -> None:
-    new_file = path_to_file.with_suffix('.h')
+    new_file = path_to_file.with_suffix(".h")
     symbol_per_line = 16
     with open(new_file, "w") as f:
         f.write("""#include <string.h>
@@ -76,7 +76,7 @@ def write_bitstream_into_cheader(path_to_file: Path, data: bytes) -> None:
 const uint8_t bitstream[] = {
 """)
         for i in range(0, len(data), symbol_per_line):
-            chunk = data[i:i + symbol_per_line]
+            chunk = data[i : i + symbol_per_line]
             hex_bytes = ", ".join(f"0x{b:02X}" for b in chunk)
             f.write(f"\t{hex_bytes}, \n")
         f.write("""};""")
@@ -89,6 +89,7 @@ def translate_bit_to_bin(path_to_bitstream_folder: Path, path_to_source: Path) -
     :return:                            List with paths to bitstream files
     """
     from elasticai.fpga_testing import get_path_to_project
+
     if path_to_bitstream_folder.is_absolute():
         used_folder = path_to_bitstream_folder
     else:

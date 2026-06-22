@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -18,7 +19,8 @@ class SettingsRxM:
 
     @property
     def get_num_cycles(self) -> int:
-        return self.num_repetitions * (2 ** self.adrwidth_rom)
+        return self.num_repetitions * (2**self.adrwidth_rom)
+
 
 DefaultSettingsRxM = SettingsRxM(
     num_repetitions=10,
@@ -33,7 +35,7 @@ class ExperimentRxM(ExperimentMain):
     __settings_rom: SettingsRxM
     __data_scaling_value: int
 
-    def __init__(self, device_id: int, use_ram: bool=False) -> None:
+    def __init__(self, device_id: int, use_ram: bool = False) -> None:
         """Class for running the ROM/LUT test on target device
         Args:
             device_id:  Integer value with device ID of test structure
@@ -41,15 +43,21 @@ class ExperimentRxM(ExperimentMain):
             None
         """
         super().__init__()
-        self._type_experiment = 'rom' if not use_ram else 'ram'
+        self._type_experiment = "rom" if not use_ram else "ram"
 
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsRxM
         set.adrwidth_rom = self.get_adrwidth_structure
         set.bitwidth_rom = self.get_bitwidth_structure
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_{device_id:03d}_{self._type_experiment.upper()}', start_folder=get_path_to_project())
+        yaml_handler = YamlConfigHandler(
+            set,
+            yaml_name=f"Config_{device_id:03d}_{self._type_experiment.upper()}",
+            start_folder=get_path_to_project(),
+        )
         self.__settings_rom = yaml_handler.get_class(SettingsRxM)
-        self.__data_scaling_value = 2 ** (self._device.get_bitwidth_data - self.__settings_rom.bitwidth_rom)
+        self.__data_scaling_value = 2 ** (
+            self._device.get_bitwidth_data - self.__settings_rom.bitwidth_rom
+        )
 
     @property
     def get_adrwidth_structure(self) -> int:
@@ -69,58 +77,62 @@ class ExperimentRxM(ExperimentMain):
 
     @property
     def get_low_bit(self) -> int:
-        return 0 if not self.__settings_rom.signed_rom else -2**(self.__settings_rom.bitwidth_rom-1)
+        return 0 if not self.__settings_rom.signed_rom else -(2 ** (self.__settings_rom.bitwidth_rom - 1))
 
     @property
     def get_high_bit(self) -> int:
-        return 2**self.__settings_rom.bitwidth_rom-1 if not self.__settings_rom.signed_rom else 2**(self.__settings_rom.bitwidth_rom-1)-1
+        return (
+            2**self.__settings_rom.bitwidth_rom - 1
+            if not self.__settings_rom.signed_rom
+            else 2 ** (self.__settings_rom.bitwidth_rom - 1) - 1
+        )
 
     def preprocess_rom_data(self, num_samples: int) -> None:
         """Preprocessing the data in order to have the data stream suitable for tested device (hex and data frame)"""
         self._buffer_data_send = self._device.slice_data_for_transmission(
-            self._device.preparing_data_calling_architecture(
-                num_repeat=num_samples
-            )
+            self._device.preparing_data_calling_architecture(num_repeat=num_samples)
         )
 
-    def preprocess_ram_data(self, adr_start: int=0) -> np.ndarray:
+    def preprocess_ram_data(self, adr_start: int = 0) -> np.ndarray:
         """Preprocessing the data in order to have the data stream suitable for tested device (hex and data frame)"""
         if self.__settings_rom.adrwidth_rom > self.get_adrwidth_structure:
-            raise ValueError(f"Selected ADRWIDTH ({self.__settings_rom.adrwidth_rom} vs. {self.get_adrwidth_structure}) is higher than on hardware implemented")
+            raise ValueError(
+                f"Selected ADRWIDTH ({self.__settings_rom.adrwidth_rom} vs. {self.get_adrwidth_structure}) is higher than on hardware implemented"
+            )
 
         waveform_ana = np.random.randint(
             low=self.get_low_bit,
             high=self.get_high_bit,
-            size=(self.get_number_adr-adr_start, ),
-            dtype=np.int32
+            size=(self.get_number_adr - adr_start,),
+            dtype=np.int32,
         )
 
         data_write_into_mem = self._device.preparing_data_memory_write_architecture(
             signal=waveform_ana,
             adr_start=adr_start,
             bit_position_start=self.__data_scaling_value,
-            is_signed=self.__settings_rom.signed_rom
+            is_signed=self.__settings_rom.signed_rom,
         )
         data_read_from_mem = self._device.preparing_data_memory_read_architecture(
             signal=np.zeros_like(waveform_ana),
             adr_start=adr_start,
             bit_position_start=self.__data_scaling_value,
-            is_signed=self.__settings_rom.signed_rom
+            is_signed=self.__settings_rom.signed_rom,
         )
-        self._buffer_data_send = self._device.slice_data_for_transmission(data_write_into_mem + data_read_from_mem)
+        self._buffer_data_send = self._device.slice_data_for_transmission(
+            data_write_into_mem + data_read_from_mem
+        )
         return waveform_ana
 
     def postprocess_data(self) -> np.ndarray:
         """Post-processing the data from device to have in readable format and numpy format"""
         data_return = self._device.slice_data_from_transmission(
-            data=self._buffer_data_get,
-            is_signed=self.__settings_rom.signed_rom,
-            stepsize=1
+            data=self._buffer_data_get, is_signed=self.__settings_rom.signed_rom, stepsize=1
         )
         return data_return / self.__data_scaling_value
 
 
-def run_rom_test_on_target(device_id: int, block_plot: bool=False) -> None:
+def run_rom_test_on_target(device_id: int, block_plot: bool = False) -> None:
     """Function for testing the ROM on target device (incl. call and plot results)
     :param device_id:   Integer value with device ID of test structure
     :param block_plot:  If true, plot blocks instead of lines
@@ -128,11 +140,10 @@ def run_rom_test_on_target(device_id: int, block_plot: bool=False) -> None:
     """
     # --- Preparing Test
     exp0 = ExperimentRxM(device_id=device_id, use_ram=False)
-    settings_test = exp0.get_settings
     settings_rom = exp0.get_settings_func
 
     # Control Routine
-    data_dut = {'process_time': [], 'data_out': []}
+    data_dut = {"process_time": [], "data_out": []}
 
     exp0.init_experiment()
     exp0.preprocess_rom_data(settings_rom.get_num_cycles)
@@ -140,13 +151,13 @@ def run_rom_test_on_target(device_id: int, block_plot: bool=False) -> None:
     data_out = exp0.postprocess_data()
 
     # Saving results
-    data_dut['process_time'].append(time_run)
-    data_dut['data_out'].append(data_out)
-    np.save(f'{exp0.get_path2run}/results_rom.npy', data_dut, allow_pickle=True)
+    data_dut["process_time"].append(time_run)
+    data_dut["data_out"].append(data_out)
+    np.save(f"{exp0.get_path2run}/results_rom.npy", data_dut, allow_pickle=True)
     plot_call(data_out, exp0.get_path2run, block_plot=block_plot)
 
 
-def run_ram_test_on_target(device_id: int, block_plot: bool=False) -> None:
+def run_ram_test_on_target(device_id: int, block_plot: bool = False) -> None:
     """Function for testing the RAM on target device (incl. call and plot results)
     :param device_id:   Integer value with device ID of test structure
     :param block_plot:  If true, plot blocks instead of lines
@@ -154,11 +165,9 @@ def run_ram_test_on_target(device_id: int, block_plot: bool=False) -> None:
     """
     # --- Preparing Test
     exp0 = ExperimentRxM(device_id=device_id, use_ram=True)
-    settings_test = exp0.get_settings
-    settings_rom = exp0.get_settings_func
 
     # Control Routine
-    data_dut = {'process_time': [], 'data_in': [], 'data_out': []}
+    data_dut = {"process_time": [], "data_in": [], "data_out": []}
 
     exp0.init_experiment()
     data_in = exp0.preprocess_ram_data(0)
@@ -166,14 +175,14 @@ def run_ram_test_on_target(device_id: int, block_plot: bool=False) -> None:
     data_out = exp0.postprocess_data()
 
     # Saving results
-    data_dut['process_time'].append(time_run)
-    data_dut['data_in'].append(data_in)
-    data_dut['data_out'].append(data_out)
-    np.save(f'{exp0.get_path2run}/results_ram.npy', data_dut, allow_pickle=True)
+    data_dut["process_time"].append(time_run)
+    data_dut["data_in"].append(data_in)
+    data_dut["data_out"].append(data_out)
+    np.save(f"{exp0.get_path2run}/results_ram.npy", data_dut, allow_pickle=True)
     plot_call(data_in, data_out, exp0.get_path2run, block_plot=block_plot)
 
 
-def plot_call(x_in: np.ndarray, x_out: np.ndarray, path: str='', block_plot: bool=False) -> None:
+def plot_call(x_in: np.ndarray, x_out: np.ndarray, path: str = "", block_plot: bool = False) -> None:
     """Plotting the signals from calling the DUT
     Args:
         x_in:           Numpy array with data to store in memory
@@ -183,19 +192,19 @@ def plot_call(x_in: np.ndarray, x_out: np.ndarray, path: str='', block_plot: boo
     Returns:
         None
     """
-    start_pos = x_in.size+1
+    start_pos = x_in.size + 1
     plt.figure()
-    plt.plot(x_in, marker='.', markersize=4, color=get_color_plot(0), label='Write')
-    plt.plot(x_out[start_pos:], marker='o', markersize=4, color=get_color_plot(1), label='Read')
+    plt.plot(x_in, marker=".", markersize=4, color=get_color_plot(0), label="Write")
+    plt.plot(x_out[start_pos:], marker="o", markersize=4, color=get_color_plot(1), label="Read")
 
     plt.xlim([0, x_in.size])
-    plt.xlabel('Call Iteration')
-    plt.ylabel(r'X_${out}$')
+    plt.xlabel("Call Iteration")
+    plt.ylabel(r"X_${out}$")
 
     plt.grid()
     plt.legend()
     plt.tight_layout(pad=0.5)
     if path:
-        save_figure(plt, path, f'call_lut')
+        save_figure(plt, path, "call_lut")
     if block_plot:
         plt.show(block=True)

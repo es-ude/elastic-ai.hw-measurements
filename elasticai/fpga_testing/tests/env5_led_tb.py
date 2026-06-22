@@ -1,43 +1,34 @@
-import cocotb
-from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge
 from copy import deepcopy
 from pathlib import Path
 
-import elasticai.fpga_testing as test_dut
-from elasticai.fpga_testing.tests import cocotb_settings_env5
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge
 from elasticai.creator.testing.cocotb_runner import run_cocotb_sim_for_src_dir
 
+import elasticai.fpga_testing as test_dut
+from elasticai.fpga_testing.tests import cocotb_settings_env5
 
 cocotb_settings = deepcopy(cocotb_settings_env5)
-cocotb_settings['path2src'] = Path(test_dut.__file__).parent / 'designs' / 'env5'
-cocotb_settings['cocotb_test_module'] = "elasticai.fpga_testing.tests.env5_led_tb"
+cocotb_settings["path2src"] = Path(test_dut.__file__).parent / "designs" / "env5"
+cocotb_settings["cocotb_test_module"] = "elasticai.fpga_testing.tests.env5_led_tb"
 
 
 @cocotb.test()
 async def top_module(dut):
-    bitwidth = dut.SPI_BITWIDTH.value.to_unsigned()
+    dut.SPI_BITWIDTH.value.to_unsigned()
     baudrate = 16
     data_send_list = [
-        ['00000100', '00000000', '00000001'],  # enable LED
-        ['00000100', '00000000', '00000000'],  # disable LED
-        ['00000100', '00000000', '00000001'],  # enable LED
-        ['00000100', '00000000', '00000000'],  # disable LED
-        ['00001000', '00000000', '00000000'],  # toggle LED
-        ['00001000', '00000000', '00000000'],  # toggle LED
-        ['00001000', '00000000', '00000000'],  # toggle LED
-        ['00001000', '00000000', '00000000'],  # toggle LED
+        ["00000100", "00000000", "00000001"],  # enable LED
+        ["00000100", "00000000", "00000000"],  # disable LED
+        ["00000100", "00000000", "00000001"],  # enable LED
+        ["00000100", "00000000", "00000000"],  # disable LED
+        ["00001000", "00000000", "00000000"],  # toggle LED
+        ["00001000", "00000000", "00000000"],  # toggle LED
+        ["00001000", "00000000", "00000000"],  # toggle LED
+        ["00001000", "00000000", "00000000"],  # toggle LED
     ]
-    state_led = [
-        1,
-        0,
-        1,
-        0,
-        1,
-        0,
-        1,
-        0
-    ]
+    state_led = [1, 0, 1, 0, 1, 0, 1, 0]
 
     # Initial definition
     dut.CLK_100MHz.value = 0
@@ -46,7 +37,7 @@ async def top_module(dut):
     dut.SPI_MOSI.value = "Z"
     dut.SPI_SCLK.value = 0
     # Start clock and making reset
-    cocotb.start_soon(Clock(dut.CLK_100MHz, 5, unit='ns').start())
+    cocotb.start_soon(Clock(dut.CLK_100MHz, 5, unit="ns").start())
     for _ in range(8):
         await RisingEdge(dut.CLK_100MHz)
     for idx in range(4):
@@ -71,7 +62,7 @@ async def top_module(dut):
             for val in data_tx:
                 dut.SPI_MOSI.value = val
                 dut.SPI_SCLK.value = 1
-                for _ in range(int(baudrate/2)):
+                for _ in range(int(baudrate / 2)):
                     await RisingEdge(dut.CLK_100MHz)
                 dut.SPI_SCLK.value = 0
                 for _ in range(int(baudrate / 2)):
@@ -92,4 +83,4 @@ async def top_module(dut):
 
 
 if __name__ == "__main__":
-    run_cocotb_sim_for_src_dir (**cocotb_settings)
+    run_cocotb_sim_for_src_dir(**cocotb_settings)

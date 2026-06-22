@@ -1,15 +1,17 @@
-import pyvisa
-from serial.tools import list_ports
 from time import sleep
+
+import pyvisa
+
 from elasticai.hw_measurements.scan_instruments import scan_instruments
-from elasticai.hw_measurements.units import *
+from elasticai.hw_measurements.units import MHz, Threeway
+
 from .mxo4x import DriverMXO4X
 
 
 class DriverRTM3004(DriverMXO4X):
     _device_name_chck = "RTM"
-    _usb_vid = 0x0aad
-    _usb_pid = 0x01d6
+    _usb_vid = 0x0AAD
+    _usb_pid = 0x01D6
 
     def __write_to_dev(self, order: str) -> None:
         """Wrapper for executing commands on device
@@ -34,7 +36,7 @@ class DriverRTM3004(DriverMXO4X):
             Queried data as a string
         """
         try:
-            text_out = ""   # default value needed, else variable may never be assigned!
+            text_out = ""  # default value needed, else variable may never be assigned!
             text_out = self.SerialDevice.query(order).strip("\0").strip()
         except Exception as e:
             self._cmd_stack.append((order, f"FAILED - {e} - {text_out}"))
@@ -69,7 +71,7 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             Result of the command if it was a query, None if it was a write command
         """
-        if '?' in cmd:
+        if "?" in cmd:
             return self.__read_from_dev(cmd)
         else:
             self.__write_to_dev(cmd)
@@ -81,7 +83,7 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             Device ID as a string
         """
-        # For some reason the ID ends on three null characters, so strip the string 
+        # For some reason the ID ends on three null characters, so strip the string
         id = self.__read_from_dev("*IDN?")
         if do_print:
             print(id)
@@ -110,9 +112,9 @@ class DriverRTM3004(DriverMXO4X):
         id_back = self.get_id(False)
         self.SerialActive = self._device_name_chck in id_back
         if self.SerialActive:
-            self._firmware_version = id_back.split(',')[-1]
-    
-    def serial_start(self, do_reset: bool=False) -> None:
+            self._firmware_version = id_back.split(",")[-1]
+
+    def serial_start(self, do_reset: bool = False) -> None:
         """Open the serial connection to device if it is found
         Args:
             do_reset: reset device during initialisation
@@ -144,7 +146,7 @@ class DriverRTM3004(DriverMXO4X):
             self.__write_to_dev("*RST")
             self.sync()
             sleep(1)
-    
+
     def scale_vertical(self, scale: float) -> bool:
         """Sets the vertical scale (V/div) of all channels on the GUI
         Args:
@@ -156,7 +158,7 @@ class DriverRTM3004(DriverMXO4X):
             return True
         self.__write_to_dev(f"CHAN:SCAL {scale}")
         return False
-    
+
     def scale_horizontal(self, scale: float) -> bool:
         """Sets the horizontal (time) scale of all channels on the GUI
         Args:
@@ -174,14 +176,14 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             None
         """
-        self.__write_to_dev(f"WGEN:OUTP ON")
+        self.__write_to_dev("WGEN:OUTP ON")
 
     def gen_disable(self) -> None:
         """Disable waveform generator
         Returns:
             None
         """
-        self.__write_to_dev(f"WGEN:OUTP OFF")
+        self.__write_to_dev("WGEN:OUTP OFF")
 
     def gen_function(self, waveform: str) -> bool:
         """Select type of waveform function to be generated (case-insensitive)
@@ -197,11 +199,16 @@ class DriverRTM3004(DriverMXO4X):
             True if waveform function is invalid
         """
         functions = {
-            "SINE": "SIN", "SQUARE": "SQU", "RAMP": "RAMP", "DC": "DC", "PULSE": "PULS",
-            "CARDINAL": "SINC", "ARBITRARY": "ARB"
+            "SINE": "SIN",
+            "SQUARE": "SQU",
+            "RAMP": "RAMP",
+            "DC": "DC",
+            "PULSE": "PULS",
+            "CARDINAL": "SINC",
+            "ARBITRARY": "ARB",
         }
         for value in list(functions.values()):
-            functions[value] = value    # make it possible to use the abbreviations as well
+            functions[value] = value  # make it possible to use the abbreviations as well
         if waveform.upper() not in functions:
             return True
         self.__write_to_dev(f"WGEN:FUNC {functions[waveform.upper()]}")
@@ -238,19 +245,19 @@ class DriverRTM3004(DriverMXO4X):
         if not (-5 <= offset <= 5):
             return True
         self.__write_to_dev(f"WGEN:VOLT:OFFS {offset:.4f}")
-        return False    
+        return False
 
     def gen_preset(self) -> None:
         """Preset the generator to a default setup including following settings:
-        Sine wavefunction, 1 MHz frequency, 1 Vpp amplitude, 500 ns horizontal scale, 0.5 V/div vertical scale  
+        Sine wavefunction, 1 MHz frequency, 1 Vpp amplitude, 500 ns horizontal scale, 0.5 V/div vertical scale
         Returns:
             None
         """
         self.gen_function("SINE")
-        self.gen_frequency(1*MHz)
+        self.gen_frequency(1 * MHz)
         self.gen_amplitude(1)
         self.scale_horizontal(5e-7)
-        self.scale_vertical(.5)
+        self.scale_vertical(0.5)
 
     def dig_technology(self, tech: str, logic_channel: int) -> bool:
         """Select threshold voltage for various types of circuits and apply it to the whole
@@ -259,14 +266,14 @@ class DriverRTM3004(DriverMXO4X):
             tech: "TTL" (1.4 V), "ECL" (-1.3 V), "CMOS" (2.5 V) or "MAN"/"MANUAL"
             logic_channel: 0..15
         Returns:
-            True if tech is or logic channel invalid   
+            True if tech is or logic channel invalid
         """
         valid_techs = ("TTL", "ECL", "CMOS", "MAN", "MANUAL")
         if tech not in valid_techs or logic_channel not in range(16):
             return True
         self.__write_to_dev(f"DIG{logic_channel}:TECH {tech}")
         return False
-    
+
     def dig_threshold(self, threshold: float, logic_channel: int) -> bool:
         """Set logical threshold for the nibble (D0...D3, D4...D7, D8...D11, and D12...D15)
         to which the logic channel belongs
@@ -280,7 +287,7 @@ class DriverRTM3004(DriverMXO4X):
             return True
         self.__write_to_dev(f"DIG{logic_channel}:THR {threshold}")
         return False
-    
+
     def dig_enable(self, pod: int):
         """Enable a logic pod
         Args:
@@ -288,11 +295,11 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             True if pod number is invalid
         """
-        if pod not in (1,2):
+        if pod not in (1, 2):
             return True
         self.__write_to_dev(f"LOG{pod}:STAT 1")
         return False
-    
+
     def dig_disable(self, pod: int):
         """Disable a logic pod
         Args:
@@ -300,11 +307,11 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             True if pod number is invalid
         """
-        if pod not in (1,2):
+        if pod not in (1, 2):
             return True
         self.__write_to_dev(f"LOG{pod}:STAT 0")
         return False
-    
+
     def dig_hysteresis(self, level, logic_channel: int) -> bool:
         """Defines the level of the hysteresis to avoid the change of signal states due to noise.
         The setting applies to the logic pod to which the indicated logic channel belongs.
@@ -322,7 +329,7 @@ class DriverRTM3004(DriverMXO4X):
             level = ("SMALL", "MEDIUM", "LARGE")[level]
         self.__write_to_dev(f"DIG{logic_channel}:HYST {level}")
         return False
-    
+
     def trig_event_mode(self, sequence: bool) -> None:
         """Select whether to trigger on a single event or a sequence of A and B events.
         Args:
@@ -330,7 +337,7 @@ class DriverRTM3004(DriverMXO4X):
         """
         self.__write_to_dev(f"TRIG:B:ENAB {sequence}")
         return False
-    
+
     def trig_a_mode(self, mode: str):
         """Set the trigger mode, which determines device behaviour if no trigger occurs.
         Args:
@@ -342,7 +349,7 @@ class DriverRTM3004(DriverMXO4X):
             return True
         self.__write_to_dev(f"TRIG:A:MODE {mode}")
         return False
-    
+
     def trig_b_mode(self, mode: str) -> bool:
         """Set either a time or an event delay after an A trigger before recognising a B trigger
         Args:
@@ -354,7 +361,7 @@ class DriverRTM3004(DriverMXO4X):
             return True
         self.__write_to_dev(f"TRIG:B:MODE {mode}")
         return False
-    
+
     def trig_source(self, source: str, event: int = 1) -> bool:
         """Set the trigger source of either the A or B trigger
         Args:
@@ -364,12 +371,20 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             True if trigger source is invalid for the given event or event is invalid
         """
-        sources = [f"CH{i}" for i in range(1,5)] + [f"D{i}" for i in range(16)] + ["SBUS1", "SBUS2", "EXT", "LINE"]
-        if event not in (1,2) or (event == 1 and source not in sources) or (event == 2 and source not in sources[:-4]):
+        sources = (
+            [f"CH{i}" for i in range(1, 5)]
+            + [f"D{i}" for i in range(16)]
+            + ["SBUS1", "SBUS2", "EXT", "LINE"]
+        )
+        if (
+            event not in (1, 2)
+            or (event == 1 and source not in sources)
+            or (event == 2 and source not in sources[:-4])
+        ):
             return True
         self.__write_to_dev(f"TRIG:{'A' if event == 1 else 'B'}:SOUR {source}")
         return False
-    
+
     def trig_delay(self, delay: float) -> None:
         """Sets the time that the instrument waits after an A-trigger until it recognises B-triggers
         Args:
@@ -396,7 +411,7 @@ class DriverRTM3004(DriverMXO4X):
             None
         """
         self.__write_to_dev("TRIG:A:FIND")
-    
+
     def trig_edge_lowpass(self, large: bool, small: bool) -> None:
         """Set an additional lowpass filter in the trigger path
         Args:
@@ -407,7 +422,7 @@ class DriverRTM3004(DriverMXO4X):
         """
         self.__write_to_dev(f"TRIG:A:EDGE:FILT:NREJ {int(large)}")
         self.__write_to_dev(f"TRIG:A:EDGE:FILT:HFR {int(small)}")
-    
+
     def trig_edge_noisereject(self, level: str | int) -> bool:
         """Sets a hysteresis range around the trigger level to avoid unwanted triggers by noise oscillations.
         The value of each hysteresis level depends on the vertical scale.
@@ -457,12 +472,12 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             True if direction or event is invalid
         """
-        if direction not in (-1,0,1) or event not in (1,2):
+        if direction not in (-1, 0, 1) or event not in (1, 2):
             return True
         args = ["NEG", "EITH", "POS"]
         self.__write_to_dev(f"TRIG:{'A' if event == 1 else 'B'}:EDGE:SLOP {args[direction + 1]}")
         return False
-    
+
     def trig_level(self, level: float, channel: int = 1) -> bool:
         """Set the trigger threshold voltage for edge, width, and timeout trigger
         Args:
@@ -471,16 +486,18 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             True if channel is invalid
         """
-        if channel not in (1,2,3,4,5):
+        if channel not in (1, 2, 3, 4, 5):
             return True
         self.__write_to_dev(f"TRIG:A:LEV{channel} {level}")
         return False
 
     def trig_export_source(self, source: str) -> bool:
-        sources = ([f"CH{i}" for i in range(1, 5)]
+        sources = (
+            [f"CH{i}" for i in range(1, 5)]
             + ["D70", "D158"]
             + [f"MA{i}" for i in range(1, 6)]
-            + [f"RE{i}" for i in range(1, 5)])
+            + [f"RE{i}" for i in range(1, 5)]
+        )
         if source not in sources:
             return True
         self.__write_to_dev(f"EXP:WAV:SOUR {source}")
@@ -495,7 +512,7 @@ class DriverRTM3004(DriverMXO4X):
         """
         self.__write_to_dev(f"TRIG:EVEN {int(state)}")
         self.__write_to_dev(f"TRIG:EVEN:WFMS {int(state)}")
-        
+
     def fra_enter(self):
         """Enter frequency response analysis mode. This is done automatically whenever an FRA function is called.
         Returns:
@@ -503,7 +520,7 @@ class DriverRTM3004(DriverMXO4X):
         """
         self.__write_to_dev("SPEC ON")
         self.sync()
-    
+
     def fra_exit(self):
         """Exit frequency response analysis mode
         Returns:
@@ -511,7 +528,7 @@ class DriverRTM3004(DriverMXO4X):
         """
         self.__write_to_dev("SPEC OFF")
         self.sync()
-    
+
     def fra_freq_start(self, freq: float) -> bool:
         """Set the start frequency of the sweep.
         NOTICE: This function is broken and should not be relied upon.
@@ -523,7 +540,7 @@ class DriverRTM3004(DriverMXO4X):
         self.fra_enter()
         self.__write_to_dev(f"SPEC:FREQ:STAR {freq}")
         return False
-    
+
     def fra_freq_stop(self, freq: float) -> bool:
         """Set the stop frequency of the sweep
         NOTICE: This function is broken and should not be relied upon.
@@ -535,7 +552,7 @@ class DriverRTM3004(DriverMXO4X):
         self.fra_enter()
         self.__write_to_dev(f"SPEC:FREQ:STOP {freq}")
         return False
-    
+
     def fra_input_channel(self, channel: int) -> bool:
         """Set the channel used for the input signal of the device
         Args:
@@ -543,7 +560,7 @@ class DriverRTM3004(DriverMXO4X):
         Returns:
             True for invalid channel number
         """
-        if channel not in (1,2,3,4):
+        if channel not in (1, 2, 3, 4):
             return True
         self.fra_enter()
         self.__write_to_dev(f"SPEC:SOUR CH{channel}")

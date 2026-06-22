@@ -1,9 +1,7 @@
 import unittest
 from time import sleep
-from elasticai.fpga_testing import (
-    get_path_to_project,
-    DeviceUnderTestHandler
-)
+
+from elasticai.fpga_testing import DeviceUnderTestHandler
 
 
 class TestingFPGA(unittest.TestCase):
@@ -55,5 +53,5 @@ class TestingFPGA(unittest.TestCase):
         assert rslt.bitwidth_output == 16
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

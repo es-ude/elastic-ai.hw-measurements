@@ -1,7 +1,9 @@
+from logging import Logger, getLogger
 from time import sleep
-from logging import getLogger, Logger
+
 import pyvisa
 from serial.tools import list_ports
+
 from elasticai.hw_measurements.scan_instruments import scan_instruments
 
 
@@ -10,7 +12,7 @@ class DriverDMM6500:
     SerialActive = False
     _device_name_chck = "DMM6500"
     _logger: Logger
-    _usb_vid = 0x05e6
+    _usb_vid = 0x05E6
     _usb_pid = 0x6500
 
     def __init__(self):
@@ -23,7 +25,7 @@ class DriverDMM6500:
     def __read_from_dev(self, order: str) -> str:
         num_stop = 100
         num_trials = 0
-        while (num_trials < num_stop):
+        while num_trials < num_stop:
             try:
                 text_out = self.SerialDevice.query(order)
                 num_trials = num_stop
@@ -32,7 +34,7 @@ class DriverDMM6500:
                 num_trials += 1
         return text_out.strip()
 
-    def __init_dev(self, do_reset: bool=True, do_beep: bool=True) -> None:
+    def __init_dev(self, do_reset: bool = True, do_beep: bool = True) -> None:
         """Function for initialisation of DAQ device
         :param do_reset:    Reset the DAQ device
         :param do_beep:     Do a beep on DAQ device after init done
@@ -53,7 +55,7 @@ class DriverDMM6500:
         id_back = self.get_id()
         self.SerialActive = self._device_name_chck in id_back
 
-    def serial_start_known_target(self, resource_name: str, do_reset: bool=False) -> None:
+    def serial_start_known_target(self, resource_name: str, do_reset: bool = False) -> None:
         """Open the serial connection to device directly"""
         rm = pyvisa.ResourceManager()
         self.SerialDevice = rm.open_resource(resource_name)
@@ -70,16 +72,23 @@ class DriverDMM6500:
     def scan_com_name(self) -> list:
         """Returning the COM Port name of the addressable devices"""
         available_coms = list_ports.comports()
-        list_right_com = [port.device for port in available_coms if
-                          port.vid == self._usb_vid and port.pid == self._usb_pid]
+        list_right_com = [
+            port.device
+            for port in available_coms
+            if port.vid == self._usb_vid and port.pid == self._usb_pid
+        ]
         if len(list_right_com) == 0:
-            errmsg = '\n'.join([f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms])
-            raise ConnectionError(f"No COM Port with right USB found - Please adapt the VID and PID values from "
-                                  f"available COM ports:\n{errmsg}")
+            errmsg = "\n".join(
+                [f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms]
+            )
+            raise ConnectionError(
+                f"No COM Port with right USB found - Please adapt the VID and PID values from "
+                f"available COM ports:\n{errmsg}"
+            )
         self._logger.debug(f"Found {len(list_right_com)} COM ports available")
         return list_right_com
 
-    def serial_start(self, do_reset: bool=False, do_beep: bool=True) -> None:
+    def serial_start(self, do_reset: bool = False, do_beep: bool = True) -> None:
         """Open the serial connection to device
         :param do_reset:    Reset the DAQ device
         :param do_beep:     Do a beep on DAQ device after init done
@@ -122,7 +131,7 @@ class DriverDMM6500:
     def do_beep(self) -> None:
         """Doing a beep signal"""
         time_sleep = 0.5
-        self.__write_to_dev(f':SYST:BEEP 300, {time_sleep}')
+        self.__write_to_dev(f":SYST:BEEP 300, {time_sleep}")
         sleep(time_sleep * 1.1)
 
     def set_measurement_mode(self, mode: str, polarity: str = "") -> None:
@@ -195,14 +204,11 @@ class DriverDMM6500:
             True on failure
         """
         available_ranges = {
-            "DC" : {
+            "DC": {
                 "VOLT": ["1e-1", "1", "10", "100", "1000"],
-                "CURR": ["1e-5", "1e-4", "1e-3", "1e-2", "1e-1", "1", "3"]
+                "CURR": ["1e-5", "1e-4", "1e-3", "1e-2", "1e-1", "1", "3"],
             },
-            "AC" : {
-                "VOLT": ["1e-1", "1", "10", "100", "750"],
-                "CURR": ["1e-3", "1e-2", "1e-1", "1", "3"]
-            }
+            "AC": {"VOLT": ["1e-1", "1", "10", "100", "750"], "CURR": ["1e-3", "1e-2", "1e-1", "1", "3"]},
         }
 
         if self.__read_from_dev(":ROUT:TERM?") == "REAR":
@@ -252,20 +258,25 @@ class DriverDMM6500:
             True on failure
         """
         if range == "AUTO":
-            if type not in (2,4):
-                self._logger.info(f"Only 2-wire and 4-wire resistance types are supported. You selected {type}.")
+            if type not in (2, 4):
+                self._logger.info(
+                    f"Only 2-wire and 4-wire resistance types are supported. You selected {type}."
+                )
                 return True
-            self.__write_to_dev(":SENS:#RES:RANG:AUTO ON".replace('#', 'F' if type == 4 else ''))
+            self.__write_to_dev(":SENS:#RES:RANG:AUTO ON".replace("#", "F" if type == 4 else ""))
             return False
 
         try:
             from math import log10
+
             power = log10(range)
             if power != int(power):
                 self._logger.info("Range argument must be power of 10.")
                 return True
         except:
-            self._logger.info(f"Mathematical error during computation of log10 of range argument: {range}.")
+            self._logger.info(
+                f"Mathematical error during computation of log10 of range argument: {range}."
+            )
             return True
 
         if type == 2:
@@ -280,7 +291,9 @@ class DriverDMM6500:
                 self.__write_to_dev(f":SENS:FRES:RANG {range}")
                 return False
         else:
-            self._logger.info(f"Only 2-wire and 4-wire resistance types are supported. You selected {type}.")
+            self._logger.info(
+                f"Only 2-wire and 4-wire resistance types are supported. You selected {type}."
+            )
             return True
         self._logger.info(f"Range argument is out of supported range: {range}")
         return True

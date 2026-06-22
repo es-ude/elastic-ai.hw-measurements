@@ -9,13 +9,16 @@ def scan_available_serial_ports() -> list:
     available_coms = list_ports.comports()
     list_right_com = [port.device for port in available_coms]
     if len(list_right_com) == 0:
-        errmsg = '\n'.join([f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms])
+        errmsg = "\n".join(
+            [f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms]
+        )
         raise ConnectionError(f"No COM Port with right USB found:\n{errmsg}")
     return list_right_com
 
 
 class HandlerUSB:
     """Class for handling serial ports in Python"""
+
     __BYTES_HEAD: int = 1
     __BYTES_DATA: int = 2
 
@@ -63,7 +66,7 @@ class HandlerUSB:
             parity=parity,
             stopbits=serial.STOPBITS_ONE,
             bytesize=serial.EIGHTBITS,
-            inter_byte_timeout=0.1
+            inter_byte_timeout=0.1,
         )
         self.device_init = True
 
@@ -95,8 +98,8 @@ class HandlerUSB:
 
     def write_wfb_hex(self, head: int, data: int) -> bytes:
         """Write content to FPGA/MCU for specific custom-made task"""
-        transmit_byte = head.to_bytes(self.__BYTES_HEAD, byteorder='big')
-        transmit_byte += data.to_bytes(self.__BYTES_DATA, byteorder='big')
+        transmit_byte = head.to_bytes(self.__BYTES_HEAD, byteorder="big")
+        transmit_byte += data.to_bytes(self.__BYTES_DATA, byteorder="big")
         self.device.write(transmit_byte)
         out = self.device.read(len(transmit_byte))
         return out

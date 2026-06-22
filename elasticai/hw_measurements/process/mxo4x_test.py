@@ -1,8 +1,9 @@
 from pathlib import Path
 from unittest import TestCase, main
-from .mxo4x import load_transient_data, load_fra_data
 
-from elasticai.hw_measurements import get_path_to_project, TransientData, FrequencyResponse
+from elasticai.hw_measurements import FrequencyResponse, TransientData, get_path_to_project
+
+from .mxo4x import load_fra_data, load_transient_data
 
 
 class TestMXO4X(TestCase):
@@ -12,25 +13,21 @@ class TestMXO4X(TestCase):
 
     def test_load_fra_data(self):
         path2file = self.path2start / "mxo4_fra.csv"
-        assert path2file.exists() == True
+        assert path2file.exists()
 
-        data = load_fra_data(
-            path2file=path2file
-        )
+        data = load_fra_data(path2file=path2file)
         assert type(data) == FrequencyResponse
-        assert data.freq.shape == (67, )
-        assert data.gain.shape == (67, )
-        assert data.phase.shape == (67, )
+        assert data.freq.shape == (67,)
+        assert data.gain.shape == (67,)
+        assert data.phase.shape == (67,)
 
     def test_load_transient_data(self):
         path2file = self.path2start / "mxo4_tran.h5"
-        assert path2file.exists() == True
+        assert path2file.exists()
 
-        data = load_transient_data(
-            path2file=path2file
-        )
+        data = load_transient_data(path2file=path2file)
         assert type(data) == TransientData
-        assert data.channels == ['C1', 'C2', 'C3']
+        assert data.channels == ["C1", "C2", "C3"]
         assert data.num_channels == 3
         assert data.rawdata.shape == (3, 50000)
         assert data.sampling_rate == 99999.99999999999
@@ -41,4 +38,3 @@ class TestMXO4X(TestCase):
 
 if __name__ == "__main__":
     main()
-
