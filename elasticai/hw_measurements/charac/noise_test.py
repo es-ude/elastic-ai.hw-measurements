@@ -1,5 +1,7 @@
-import numpy as np
 from unittest import TestCase, main
+
+import numpy as np
+
 from elasticai.hw_measurements.charac import CharacterizationNoise
 
 
@@ -15,18 +17,14 @@ class TestNoise(TestCase):
         # signal += np.sin(2*np.pi*time*2)
 
         self.dut = CharacterizationNoise()
-        self.dut.load_data(
-            time=time,
-            signal=np.expand_dims(signal, axis=0),
-            channels=[0]
-        )
+        self.dut.load_data(time=time, signal=np.expand_dims(signal, axis=0), channels=[0])
 
     def test_load_data_wrong_format_single(self):
         with self.assertRaises(ValueError):
             self.dut.load_data(
                 time=np.linspace(start=0.0, stop=1.0, num=101, endpoint=True),
-                signal=np.zeros((101, )),
-                channels=[0]
+                signal=np.zeros((101,)),
+                channels=[0],
             )
 
     def test_load_data_wrong_format_dual(self):
@@ -34,27 +32,23 @@ class TestNoise(TestCase):
             self.dut.load_data(
                 time=np.linspace(start=0.0, stop=1.0, num=101, endpoint=True),
                 signal=np.zeros((101, 1)),
-                channels=[0]
+                channels=[0],
             )
 
     def test_sampling_rate(self):
-        assert self.dut.get_sampling_rate == 19998.
+        assert self.dut.get_sampling_rate == 19998.0
 
     def test_num_channels(self):
         assert self.dut.get_num_channels == 1
 
     def test_noise_spectrum_resistor(self):
-        rslt = self.dut.extract_noise_power_distribution(
-            scale=1.0,
-            num_segments=1000
+        rslt = self.dut.extract_noise_power_distribution(scale=1.0, num_segments=1000)
+        np.testing.assert_array_almost_equal(
+            rslt.spec, np.zeros_like(rslt.spec) + self.noise_density, decimal=7
         )
-        np.testing.assert_array_almost_equal(rslt.spec, np.zeros_like(rslt.spec) + self.noise_density, decimal=7)
 
     def test_noise_rms_resistor_total(self):
-        self.dut.extract_noise_power_distribution(
-            scale=1.0,
-            num_segments=100
-        )
+        self.dut.extract_noise_power_distribution(scale=1.0, num_segments=100)
         rslt = self.dut.extract_noise_rms()
         print(rslt[0])
 
@@ -62,16 +56,13 @@ class TestNoise(TestCase):
         assert 9.75e-6 < rslt[0] < 10.25e-6
 
     def test_noise_rms_resistor_range(self):
-        self.dut.extract_noise_power_distribution(
-            scale=1.0,
-            num_segments=100
-        )
-        rslt = self.dut.extract_noise_rms_specific(100., 1000.)
+        self.dut.extract_noise_power_distribution(scale=1.0, num_segments=100)
+        rslt = self.dut.extract_noise_rms_specific(100.0, 1000.0)
         print(rslt[0])
 
         assert len(rslt) == self.dut.get_num_channels
         assert 2.5e-6 < rslt[0] < 3.5e-6
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

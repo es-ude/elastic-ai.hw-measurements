@@ -9,7 +9,7 @@ from elasticai.fpga_testing.testcase import (
 )
 
 
-def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> None:
+def run_embedded_test(print_rqst_results: bool = False, show_plots: bool = True) -> None:
     """Function for running the test cases which are implemented on device
     :param print_rqst_results:  Printing the device structure characteristics
     :param show_plots:          If true, showing and blocking the results
@@ -17,8 +17,8 @@ def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> 
     """
     test_type, test_to_run = extract_available_structures_on_device(print_rqst=print_rqst_results)
     for idx, used_skeleton in enumerate(test_to_run):
-        do_plot = idx == len(test_to_run)-1 and show_plots
-        match(test_type[used_skeleton]):
+        do_plot = idx == len(test_to_run) - 1 and show_plots
+        match test_type[used_skeleton]:
             case 0:
                 raise ValueError("This testcase uses no structure - It is just disabling the environment")
             case 1:
@@ -32,7 +32,9 @@ def run_embedded_test(print_rqst_results: bool=False, show_plots: bool=True) -> 
             case 5:
                 run_filter_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 6:
-                raise NotImplementedError("Test Code for Event-Detection and Windowing is not implemented")
+                raise NotImplementedError(
+                    "Test Code for Event-Detection and Windowing is not implemented"
+                )
             case 7:
                 run_inference_on_target(device_id=used_skeleton, block_plot=do_plot)
             case 8:

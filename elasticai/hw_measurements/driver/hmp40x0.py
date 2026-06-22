@@ -1,8 +1,10 @@
+from logging import Logger, getLogger
+from time import sleep
+
 import numpy as np
 import pyvisa
-from time import sleep
-from logging import getLogger, Logger
 from serial.tools import list_ports
+
 from elasticai.hw_measurements.scan_instruments import scan_instruments
 
 
@@ -11,9 +13,9 @@ class DriverHMP40X0:
     _device_name_chck = "HMP"
     _logger: Logger
     _usb_vid = 0x0403
-    _usb_pid = 0xed72
+    _usb_pid = 0xED72
 
-    def __init__(self, num_ch: int=4) -> None:
+    def __init__(self, num_ch: int = 4) -> None:
         """Class for Remote Controlling the Power Supply R&S HMP40X0 via USB
         :param num_ch:  Number of available device channels (HMP4030 = 3, HMP4040 = 4)
         :return:        None
@@ -89,12 +91,19 @@ class DriverHMP40X0:
     def scan_com_name(self) -> list:
         """Returning the COM Port name of the addressable devices"""
         available_coms = list_ports.comports()
-        list_right_com = [port.device for port in available_coms if
-                          port.vid == self._usb_vid and port.pid == self._usb_pid]
+        list_right_com = [
+            port.device
+            for port in available_coms
+            if port.vid == self._usb_vid and port.pid == self._usb_pid
+        ]
         if len(list_right_com) == 0:
-            errmsg = '\n'.join([f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms])
-            raise ConnectionError(f"No COM Port with right USB found - Please adapt the VID and PID values from "
-                                  f"available COM ports:\n{errmsg}")
+            errmsg = "\n".join(
+                [f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms]
+            )
+            raise ConnectionError(
+                f"No COM Port with right USB found - Please adapt the VID and PID values from "
+                f"available COM ports:\n{errmsg}"
+            )
         self._logger.debug(f"Found {len(list_right_com)} COM ports available")
         return list_right_com
 
@@ -219,7 +228,9 @@ class DriverHMP40X0:
             for string in text:
                 self.__write_to_dev(string)
 
-    def afg_set_waveform(self, sel_ch: int, voltage: np.ndarray, current: np.ndarray, time: np.ndarray, num_cycles=0):
+    def afg_set_waveform(
+        self, sel_ch: int, voltage: np.ndarray, current: np.ndarray, time: np.ndarray, num_cycles=0
+    ):
         """Set arbitrary waveform of the selected channel (max. 128 points)"""
         if not self.SerialActive:
             print("... not done due to wrong device")

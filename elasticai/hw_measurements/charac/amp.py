@@ -1,15 +1,16 @@
-import numpy as np
-from os.path import splitext
-from logging import getLogger, Logger
-from tqdm import tqdm
-from time import sleep
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
+from logging import Logger, getLogger
+from os.path import splitext
+from time import sleep
 
-from elasticai.hw_measurements.yaml_handler import YamlConfigHandler
+import numpy as np
+from tqdm import tqdm
+
+from elasticai.hw_measurements._helper.yaml import YamlConfigHandler
 from elasticai.hw_measurements.charac.common import CharacterizationCommon
+from elasticai.hw_measurements.plots import plot_transfer_function_metric, plot_transfer_function_norm
 from elasticai.hw_measurements.process.data import MetricCalculator
-from elasticai.hw_measurements.plots import plot_transfer_function_norm, plot_transfer_function_metric
 
 
 @dataclass
@@ -25,6 +26,7 @@ class SettingsAmplifier:
         delta_steps:    Float of intermediate steps in changing values
         sleep_sec:      Sleeping seconds between each DAQ setting
     """
+
     system_id: str
     vss: float
     vdd: float
@@ -46,29 +48,43 @@ class SettingsAmplifier:
     def get_num_steps(self) -> int:
         """Function for getting the number of steps in testing"""
         assert len(self.test_rang) == 2, "Variable: test_rang - Length must be 2"
-        assert self.test_rang[0] < self.test_rang[1], "Variable: test_rang[0] must be smaller than test_rang[1]"
-        assert self.vss <= self.test_rang[0] and self.vss < self.test_rang[1], "Variable: vss must be smaller than test_rang"
-        assert self.vdd > self.test_rang[0] and self.vdd >= self.test_rang[1], "Variable: vdd must be greater than test_rang"
+        assert self.test_rang[0] < self.test_rang[1], (
+            "Variable: test_rang[0] must be smaller than test_rang[1]"
+        )
+        assert self.vss <= self.test_rang[0] and self.vss < self.test_rang[1], (
+            "Variable: vss must be smaller than test_rang"
+        )
+        assert self.vdd > self.test_rang[0] and self.vdd >= self.test_rang[1], (
+            "Variable: vdd must be greater than test_rang"
+        )
         return int((self.test_rang[1] - self.test_rang[0]) / self.delta_steps) + 1
 
     def get_cycle_stimuli_input(self) -> np.ndarray:
-        return np.linspace(start=self.test_rang[0], stop=self.test_rang[1], num=self.get_num_steps(), endpoint=True, dtype=float)
+        return np.linspace(
+            start=self.test_rang[0],
+            stop=self.test_rang[1],
+            num=self.get_num_steps(),
+            endpoint=True,
+            dtype=float,
+        )
 
     def get_cycle_empty_array(self) -> np.ndarray:
         """Function for generating an empty numpy array with right size"""
         assert self.daq_ovr > 0, "Variable: daq_ovr - Must be greater than 1"
-        return np.zeros(shape=(self.num_rpt, self.get_cycle_stimuli_input().size, self.daq_ovr), dtype=float)
+        return np.zeros(
+            shape=(self.num_rpt, self.get_cycle_stimuli_input().size, self.daq_ovr), dtype=float
+        )
 
 
 DefaultSettingsAmplifier = SettingsAmplifier(
-    system_id='0',
+    system_id="0",
     vss=0.0,
     vdd=5.0,
     test_rang=[0.0, 5.0],
     daq_ovr=1,
     num_rpt=1,
     delta_steps=0.05,
-    sleep_sec=0.1
+    sleep_sec=0.1,
 )
 
 
@@ -82,12 +98,12 @@ class CharacterizationAmplifier(CharacterizationCommon):
         super().__init__()
         self._logger = getLogger(__name__)
         self.settings = YamlConfigHandler(
-            yaml_template=DefaultSettingsAmplifier,
-            path2yaml='config',
-            yaml_name='Config_TestAmplifier'
+            yaml_template=DefaultSettingsAmplifier, path2yaml="config", yaml_name="Config_TestAmplifier"
         ).get_class(SettingsAmplifier)
 
-    def run_test_transfer(self, chnl: int, func_mux, func_set_daq, func_sens, func_get_daq, func_beep) -> dict:
+    def run_test_transfer(
+        self, chnl: int, func_mux, func_set_daq, func_sens, func_get_daq, func_beep
+    ) -> dict:
         """Function for characterizing the transfer function of the Amplifier
         :param chnl:            Integer number for testing the channel
         :param func_mux:        Function for defining the testmode of the hardware DUT with defining the channel (chnl)
@@ -97,7 +113,7 @@ class CharacterizationAmplifier(CharacterizationCommon):
         :param func_beep:       Function for do a beep in DAQ
         :return:                Dictionary with ['stim': input test signal of one repetition, 'settings': Settings, 'rpt<X>': Test results]"""
         stimuli = self.settings.get_cycle_stimuli_input()
-        results = {'stim': stimuli}
+        results = {"stim": stimuli}
 
         sens_test = self.settings.get_cycle_empty_array()
         results_ch = self.settings.get_cycle_empty_array()
@@ -105,7 +121,13 @@ class CharacterizationAmplifier(CharacterizationCommon):
         self._logger.debug(f"Prepared Amplifier channel: {chnl}")
 
         for rpt_idx in range(self.settings.num_rpt):
-            for val_idx, data in enumerate(tqdm(stimuli, ncols=100, desc=f"Process CH{chnl} @ repetition {1 + rpt_idx}/{self.settings.num_rpt}")):
+            for val_idx, data in enumerate(
+                tqdm(
+                    stimuli,
+                    ncols=100,
+                    desc=f"Process CH{chnl} @ repetition {1 + rpt_idx}/{self.settings.num_rpt}",
+                )
+            ):
                 self._input_val = data
                 func_set_daq(data)
                 sleep(self.settings.sleep_sec)
@@ -127,11 +149,7 @@ class CharacterizationAmplifier(CharacterizationCommon):
         :param file_name:   Name of figure file to save
         :return:            None
         """
-        self.__plot_characteristic(
-            data=data,
-            path2save=path,
-            file_name=file_name
-        )
+        self.__plot_characteristic(data=data, path2save=path, file_name=file_name)
 
     def plot_characteristic_results_from_file(self, file_name: str, path: str) -> None:
         """Function for plotting the loaded data files
@@ -139,34 +157,27 @@ class CharacterizationAmplifier(CharacterizationCommon):
         :param file_name:   Name of figure file to save
         :return:            None
         """
-        self._logger.info('Loading the data file')
-        data = MetricCalculator().load_data(
-            path=path,
-            file_name=file_name
-        )['data']
-        self._logger.info('Calculating the metric')
+        self._logger.info("Loading the data file")
+        data = MetricCalculator().load_data(path=path, file_name=file_name)["data"]
+        self._logger.info("Calculating the metric")
 
-        self.__plot_characteristic(
-            data=data,
-            path2save=path,
-            file_name=file_name
-        )
+        self.__plot_characteristic(data=data, path2save=path, file_name=file_name)
 
     def __plot_characteristic(self, data: dict, path2save: str, file_name: str) -> None:
         """"""
         hndl = MetricCalculator()
         metric = hndl.process_data_direct(data)
-        self._logger.info('Calculating the metric')
+        self._logger.info("Calculating the metric")
 
         file_name_wo_ext = splitext(file_name)[0]
-        xtext = r'Voltage $V_{in}$ [V]'
+        xtext = r"Voltage $V_{in}$ [V]"
         plot_transfer_function_norm(
             data=metric,
             path2save=path2save,
             xlabel=xtext,
-            ylabel=r'Voltage $V_{out}$ [V]',
-            title='',
-            file_name=f"{file_name_wo_ext}_norm"
+            ylabel=r"Voltage $V_{out}$ [V]",
+            title="",
+            file_name=f"{file_name_wo_ext}_norm",
         )
 
         plot_transfer_function_metric(
@@ -174,7 +185,7 @@ class CharacterizationAmplifier(CharacterizationCommon):
             func=hndl.calculate_gain_from_transfer,
             path2save=path2save,
             xlabel=xtext,
-            ylabel='Gain [V/V]',
-            title='',
-            file_name=f"{file_name_wo_ext}_gain"
+            ylabel="Gain [V/V]",
+            title="",
+            file_name=f"{file_name_wo_ext}_gain",
         )

@@ -1,8 +1,10 @@
-import pyvisa
+from logging import Logger, getLogger
 from platform import system
 from time import sleep, strftime, time_ns
-from logging import getLogger, Logger
+
+import pyvisa
 from serial.tools import list_ports
+
 from elasticai.hw_measurements.scan_instruments import scan_instruments
 
 
@@ -10,13 +12,13 @@ class DriverNGUX01:
     SerialDevice: pyvisa.Resource
     SerialActive = False
     _logger: Logger
-    _usb_vid = 0x0aad
-    _usb_pid = 0x0197    # for some reason NGU and MXO share the same PID
+    _usb_vid = 0x0AAD
+    _usb_pid = 0x0197  # for some reason NGU and MXO share the same PID
 
     _volt_range = [-20.0, 20.0]
     _curr_range = [-0.1, 0.1]
     _device_name_chck = "NGU"
-    _last_usb_state: bool   # True = connected, False = disconnected
+    _last_usb_state: bool  # True = connected, False = disconnected
     _fastlog_finish_timestamp: int = 0
 
     def __init__(self):
@@ -53,7 +55,7 @@ class DriverNGUX01:
     def __float_eq(self, x, y, epsilon=0.00000001):
         return abs(x - y) < epsilon
 
-    def sync(self, timeout = 86400000) -> None:
+    def sync(self, timeout=86400000) -> None:
         """Wait until all queued commands have been processed
         Args:
             timeout: timeout in milliseconds, VISA exception thrown on timeout, default 1 day
@@ -65,14 +67,16 @@ class DriverNGUX01:
         self.__write_to_dev("*WAI")
         self.SerialDevice.timeout = backup_timeout
 
-    def serial_open_known_target(self, resource_name: str, do_reset: bool=False) -> None:
+    def serial_open_known_target(self, resource_name: str, do_reset: bool = False) -> None:
         """Open the serial connection to device"""
         rm = pyvisa.ResourceManager()
         self.SerialDevice = rm.open_resource(resource_name)
         try:
             self.__do_check_idn()
         except:
-            raise RuntimeError('Device not connected or USB class of NGU is not TMC (set per menu -> Interfaces -> USB class)')
+            raise RuntimeError(
+                "Device not connected or USB class of NGU is not TMC (set per menu -> Interfaces -> USB class)"
+            )
         self.__init_dev(do_reset)
 
     def get_usb_vid(self):
@@ -80,20 +84,27 @@ class DriverNGUX01:
 
     def get_usb_pid(self):
         return self._usb_pid
-    
+
     def scan_com_name(self) -> list:
         """Returning the COM Port name of the addressable devices"""
         available_coms = list_ports.comports()
-        list_right_com = [port.device for port in available_coms if
-                          port.vid == self._usb_vid and port.pid == self._usb_pid]
+        list_right_com = [
+            port.device
+            for port in available_coms
+            if port.vid == self._usb_vid and port.pid == self._usb_pid
+        ]
         if len(list_right_com) == 0:
-            errmsg = '\n'.join([f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms])
-            raise ConnectionError(f"No COM Port with right USB found - Please adapt the VID and PID values from "
-                                  f"available COM ports:\n{errmsg}")
+            errmsg = "\n".join(
+                [f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms]
+            )
+            raise ConnectionError(
+                f"No COM Port with right USB found - Please adapt the VID and PID values from "
+                f"available COM ports:\n{errmsg}"
+            )
         self._logger.debug(f"Found {len(list_right_com)} COM ports available")
         return list_right_com
 
-    def serial_start(self, do_reset: bool=False) -> None:
+    def serial_start(self, do_reset: bool = False) -> None:
         """Open the serial connection to device"""
         list_dev = scan_instruments(self)
         if system() == "Linux":
@@ -107,7 +118,8 @@ class DriverNGUX01:
                 self.__do_check_idn()
             except:
                 raise RuntimeError(
-                    'Device not connected or USB class of NGU is not TMC (set per menu -> Interfaces -> USB class)')
+                    "Device not connected or USB class of NGU is not TMC (set per menu -> Interfaces -> USB class)"
+                )
 
             if self.SerialActive:
                 break
@@ -135,7 +147,7 @@ class DriverNGUX01:
         else:
             for ite in range(0, num_iterations):
                 self.__write_to_dev("SYST:BEEP")
-                sleep(.3)
+                sleep(0.3)
 
     def do_reset(self) -> None:
         """Reset the device"""
@@ -151,15 +163,15 @@ class DriverNGUX01:
         if not self.SerialActive:
             print("... not done due to wrong device")
         else:
-            runtime = int(self.__read_from_dev('SYST:UPT?'))
+            runtime = int(self.__read_from_dev("SYST:UPT?"))
             print(f"Actual runtime: {runtime / 60:.3f} sec")
 
     def do_get_system_time(self) -> None:
-        """Getting the actual system time of device """
+        """Getting the actual system time of device"""
         if not self.SerialActive:
             print("... not done due to wrong device")
         else:
-            time = self.__read_from_dev('SYST:TIME?').split(',')
+            time = self.__read_from_dev("SYST:TIME?").split(",")
             print(f"System time: {int(time[0]):02d}:{int(time[1]):02d},{int(time[2]):02d}")
 
     def set_voltage_range(self, range: int) -> bool:
@@ -169,7 +181,7 @@ class DriverNGUX01:
         Returns:
             True when argument is invalid
         """
-        if range in (6,20):
+        if range in (6, 20):
             self.__write_to_dev(f"VOLT:RANG {range}")
             return False
         return True
@@ -259,14 +271,14 @@ class DriverNGUX01:
             print("... not done due to wrong device")
         else:
             if mode == 0:
-                str_out = 'AUTO'
+                str_out = "AUTO"
             elif mode == 1:
-                str_out = 'SINK'
+                str_out = "SINK"
             else:
-                str_out = 'SOUR'
+                str_out = "SOUR"
             self.__write_to_dev(f"OUTP:MODE {str_out}")
 
-    def output_activate(self, use_fast_output: bool=False) -> None:
+    def output_activate(self, use_fast_output: bool = False) -> None:
         """Activating the output
         Args:
             use_fast_output: (De-)Activate fast transient response
@@ -278,9 +290,9 @@ class DriverNGUX01:
         else:
             self.__write_to_dev(f"OUTP:FTR {1 if use_fast_output else 0}")
             sleep(0.5)
-            self.__write_to_dev(f"OUTP:SEL 1")
+            self.__write_to_dev("OUTP:SEL 1")
             sleep(0.5)
-            self.__write_to_dev(f"OUTP:GEN 1")
+            self.__write_to_dev("OUTP:GEN 1")
             sleep(0.5)
 
     def output_deactivated(self) -> None:
@@ -291,12 +303,12 @@ class DriverNGUX01:
         if not self.SerialActive:
             print("... not done due to wrong device")
         else:
-            self.__write_to_dev(f"OUTP:SEL 0")
+            self.__write_to_dev("OUTP:SEL 0")
             sleep(0.5)
-            self.__write_to_dev(f"OUTP:GEN 0")
+            self.__write_to_dev("OUTP:GEN 0")
             sleep(0.5)
 
-    def get_measurement_voltage(self, do_print: bool=False) -> float:
+    def get_measurement_voltage(self, do_print: bool = False) -> float:
         """Reading the voltage
         Args:
             do_print: Also print the voltage value to stdout
@@ -312,7 +324,7 @@ class DriverNGUX01:
                 print(f"... meas. voltage: {val:.6f} V")
             return val
 
-    def get_measurement_current(self, do_print: bool=False) -> float:
+    def get_measurement_current(self, do_print: bool = False) -> float:
         """Reading the current
         Args:
             do_print: Also print the current value to stdout
@@ -328,7 +340,7 @@ class DriverNGUX01:
                 print(f"... meas. current: {1e3 * val:.6f} mA")
             return val
 
-    def get_measurement_power(self, do_print: bool=False) -> float:
+    def get_measurement_power(self, do_print: bool = False) -> float:
         """Reading the power
         Args:
             do_print: Also print the power value to stdout
@@ -344,7 +356,7 @@ class DriverNGUX01:
                 print(f"... meas. power: {1e3 * val:.6f} mW")
             return val
 
-    def get_measurement_energy(self, do_print: bool=False) -> float:
+    def get_measurement_energy(self, do_print: bool = False) -> float:
         """Reading the energy
         Args:
             do_print: Also print the energy value to stdout
@@ -380,8 +392,10 @@ class DriverNGUX01:
         Returns:
             FastLog sample rate in kilosamples per second
         """
-        rate = self.__read_from_dev("FLOG:SRAT?").strip()[1:]   # rate has format "S###[k]", get rid of the S
-        if rate[-1] == 'k':
+        rate = self.__read_from_dev("FLOG:SRAT?").strip()[
+            1:
+        ]  # rate has format "S###[k]", get rid of the S
+        if rate[-1] == "k":
             return float(rate[:-1])
         else:
             return 0.1
@@ -445,21 +459,21 @@ class DriverNGUX01:
         """
         self.__write_to_dev("FLOG 0")
         self._fastlog_finish_timestamp = time_ns()
-    
+
     def is_usb_connected(self) -> bool:
         """EVENT - Check for USB device connection
         Returns:
             True if USB device is detected, False otherwise
         """
         return "USB" in self.test("FLOG:FILE:TPAR?")
-    
+
     def is_usb_disconnected(self) -> bool:
         """EVENT - Convenience function for negation of is_usb_connected, to avoid lambda expression
         Returns:
             True if no USB device is detected, False otherwise
         """
         return not self.is_usb_connected()
-    
+
     def has_usb_switched_state(self) -> bool:
         """EVENT - Check if USB device has been (dis-)connected since the last call of this function
         or since serial connection has been established if called for the first time
@@ -470,21 +484,21 @@ class DriverNGUX01:
         ret = now_state != self._last_usb_state
         self._last_usb_state = now_state
         return ret
-    
+
     def is_fastlog_running(self) -> bool:
         """EVENT - Check if FastLog measurement is currently running
         Returns:
             True if FastLog measurement is running, False otherwise
         """
         return time_ns() <= self._fastlog_finish_timestamp and self.is_usb_connected()
-    
+
     def is_fastlog_finished(self) -> bool:
         """EVENT - Convenience function for negation of is_fastlog_running, to avoid lambda expression
         Returns:
             True if FastLog measurement has finished or is not running, False otherwise
         """
         return not self.is_fastlog_running()
-    
+
     def event_handler(self, event, action, *args, **kwargs):
         """Listen for events and execute an action when triggered. The desired event is
         polled for every 100 ms, sleeping in-between, hence this is a blocking function.
@@ -499,9 +513,9 @@ class DriverNGUX01:
         while not event():
             sleep(0.1)
         return action(*args, **kwargs)
-        
+
     def test(self, cmd):
-        if '?' in cmd:
+        if "?" in cmd:
             return self.__read_from_dev(cmd)
         else:
             self.__write_to_dev(cmd)

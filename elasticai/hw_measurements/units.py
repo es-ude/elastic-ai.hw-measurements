@@ -1,5 +1,5 @@
 # SI unit types
-mHz = .001
+mHz = 0.001
 KHz = 1000
 MHz = 1000000
 GHz = 1000000000

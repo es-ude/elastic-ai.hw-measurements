@@ -1,11 +1,12 @@
 import unittest
-import numpy as np
 from copy import deepcopy
-from elasticai.hw_measurements.charac.adc import SettingsADC, CharacterizationADC
 
+import numpy as np
+
+from elasticai.hw_measurements.charac.adc import CharacterizationADC, SettingsADC
 
 settings = SettingsADC(
-    system_id='0',
+    system_id="0",
     voltage_min=-5.0,
     voltage_max=5.0,
     adc_reso=16,
@@ -14,14 +15,14 @@ settings = SettingsADC(
     daq_ovr=4,
     num_rpt=1,
     delta_steps=0.05,
-    sleep_sec=0.01
+    sleep_sec=0.01,
 )
 
 
 class TestADC(unittest.TestCase):
     def test_settings_date(self):
         date = settings.get_date_string()
-        check = len(date.split('-')[0]) == 8 and len(date.split('-')[1]) == 6
+        check = len(date.split("-")[0]) == 8 and len(date.split("-")[1]) == 6
         self.assertTrue(check)
 
     def test_settings_num_steps(self):
@@ -48,7 +49,7 @@ class TestADC(unittest.TestCase):
         set0.delta_steps = 1.0
 
         stimuli = set0.get_cycle_stimuli_input()
-        check = np.array([-5., -4., -3., -2., -1., 0., 1., 2., 3., 4., 5.])
+        check = np.array([-5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
         np.testing.assert_array_equal(stimuli, check)
 
     def test_settings_stimuli_half_step(self):
@@ -57,7 +58,7 @@ class TestADC(unittest.TestCase):
         set0.delta_steps = 0.5
 
         stimuli = set0.get_cycle_stimuli_input()
-        check = np.array([0., 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 5., 4.5, 5.])
+        check = np.array([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 5.0, 4.5, 5.0])
         np.testing.assert_array_almost_equal(stimuli, check, decimal=-1)
 
     def test_settings_result_array(self):
@@ -83,9 +84,10 @@ class TestADC(unittest.TestCase):
             func_daq=hndl.dummy_set_daq,
             func_sens=hndl.dummy_get_daq,
             func_dut=hndl.dummy_get_dut_adc,
-            func_beep=hndl.dummy_beep
+            func_beep=hndl.dummy_beep,
         )
         self.assertTrue(len(results) == 1 + len(set0.adc_chnl))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

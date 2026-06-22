@@ -1,14 +1,16 @@
-import numpy as np
-from os.path import splitext
-from logging import getLogger, Logger
-from tqdm import tqdm
-from time import sleep
-from datetime import datetime
 from dataclasses import dataclass
-from elasticai.hw_measurements.yaml_handler import YamlConfigHandler
+from datetime import datetime
+from logging import Logger, getLogger
+from os.path import splitext
+from time import sleep
+
+import numpy as np
+from tqdm import tqdm
+
+from elasticai.hw_measurements._helper.yaml import YamlConfigHandler
 from elasticai.hw_measurements.charac.common import CharacterizationCommon
+from elasticai.hw_measurements.plots import plot_transfer_function_metric, plot_transfer_function_norm
 from elasticai.hw_measurements.process.data import MetricCalculator
-from elasticai.hw_measurements.plots import plot_transfer_function_norm, plot_transfer_function_metric
 
 
 @dataclass
@@ -25,6 +27,7 @@ class SettingsADC:
         num_rpt:        Integer of completes cycles to run DAQ
         sleep_sec:      Sleeping seconds between each DAQ setting
     """
+
     system_id: str
     voltage_min: float
     voltage_max: float
@@ -48,14 +51,26 @@ class SettingsADC:
     def get_num_steps(self) -> int:
         """Function for getting the number of steps in testing"""
         assert len(self.adc_rang) == 2, "Variable: adc_rang - Length must be 2"
-        assert self.adc_rang[0] < self.adc_rang[1], "Variable: adc_rang[0] must be smaller than adc_rang[1]"
-        assert self.voltage_min <= self.adc_rang[0] and self.voltage_min < self.adc_rang[1], "Variable: voltage_min must be smaller than adc_rang"
-        assert self.voltage_max > self.adc_rang[0] and self.voltage_max >= self.adc_rang[1], "Variable: voltage_max must be greater than adc_rang"
+        assert self.adc_rang[0] < self.adc_rang[1], (
+            "Variable: adc_rang[0] must be smaller than adc_rang[1]"
+        )
+        assert self.voltage_min <= self.adc_rang[0] and self.voltage_min < self.adc_rang[1], (
+            "Variable: voltage_min must be smaller than adc_rang"
+        )
+        assert self.voltage_max > self.adc_rang[0] and self.voltage_max >= self.adc_rang[1], (
+            "Variable: voltage_max must be greater than adc_rang"
+        )
         return int((self.adc_rang[1] - self.adc_rang[0]) / self.delta_steps) + 1
 
     def get_cycle_stimuli_input(self) -> np.ndarray:
         """Getting the numpy array with a stimuli with sawtooth waveform"""
-        return np.linspace(start=self.adc_rang[0], stop=self.adc_rang[1], num=self.get_num_steps(), endpoint=True, dtype=float)
+        return np.linspace(
+            start=self.adc_rang[0],
+            stop=self.adc_rang[1],
+            num=self.get_num_steps(),
+            endpoint=True,
+            dtype=float,
+        )
 
     def get_cycle_empty_array(self) -> np.ndarray:
         """Function for generating an empty numpy array with right size"""
@@ -64,7 +79,7 @@ class SettingsADC:
 
 
 DefaultSettingsADC = SettingsADC(
-    system_id='0',
+    system_id="0",
     voltage_min=0.0,
     voltage_max=5.0,
     adc_reso=16,
@@ -73,7 +88,7 @@ DefaultSettingsADC = SettingsADC(
     daq_ovr=1,
     num_rpt=1,
     delta_steps=0.05,
-    sleep_sec=0.1
+    sleep_sec=0.1,
 )
 
 
@@ -87,9 +102,7 @@ class CharacterizationADC(CharacterizationCommon):
         super().__init__()
         self._logger = getLogger(__name__)
         self.settings = YamlConfigHandler(
-            yaml_template=DefaultSettingsADC,
-            path2yaml='config',
-            yaml_name='Config_TestADC'
+            yaml_template=DefaultSettingsADC, path2yaml="config", yaml_name="Config_TestADC"
         ).get_class(SettingsADC)
 
     def run_test_transfer(self, func_mux, func_daq, func_sens, func_dut, func_beep) -> dict:
@@ -102,7 +115,7 @@ class CharacterizationADC(CharacterizationCommon):
         :return:            Dictionary with ['stim': input test signal of one repetition, 'settings': Settings, 'ch<X>': DUT results with 'val' and 'std']"""
         stimuli = self.settings.get_cycle_stimuli_input()
 
-        results = {'stim': stimuli}
+        results = {"stim": stimuli}
         for chnl in self.settings.adc_chnl:
             sens_test = self.settings.get_cycle_empty_array()
             results_ch = self.settings.get_cycle_empty_array()
@@ -110,7 +123,13 @@ class CharacterizationADC(CharacterizationCommon):
             self._logger.debug(f"Prepared ADC channel: {chnl}")
 
             for rpt_idx in range(self.settings.num_rpt):
-                for val_idx, data in enumerate(tqdm(stimuli, ncols=100, desc=f"Process CH{chnl} @ repetition {1 + rpt_idx}/{self.settings.num_rpt}")):
+                for val_idx, data in enumerate(
+                    tqdm(
+                        stimuli,
+                        ncols=100,
+                        desc=f"Process CH{chnl} @ repetition {1 + rpt_idx}/{self.settings.num_rpt}",
+                    )
+                ):
                     self._input_val = data
                     func_daq(data)
                     sleep(self.settings.sleep_sec)
@@ -133,18 +152,11 @@ class CharacterizationADC(CharacterizationCommon):
         :param file_name:   Name of numpy array with DAQ results to load
         :return:            None
         """
-        self._logger.info('Loading the data file')
-        data = MetricCalculator().load_data(
-            path=path,
-            file_name=file_name
-        )['data']
-        self._logger.info('Calculating the metric')
+        self._logger.info("Loading the data file")
+        data = MetricCalculator().load_data(path=path, file_name=file_name)["data"]
+        self._logger.info("Calculating the metric")
 
-        self.__plot_characteristic(
-            data=data,
-            path2save=path,
-            file_name=file_name
-        )
+        self.__plot_characteristic(data=data, path2save=path, file_name=file_name)
 
     def plot_characteristic_results_direct(self, data: dict, file_name: str, path: str) -> None:
         """Function for plotting the loaded data files
@@ -154,43 +166,39 @@ class CharacterizationADC(CharacterizationCommon):
         :return:            None
         """
         hndl = MetricCalculator()
-        self._logger.info('Calculating the metric')
+        self._logger.info("Calculating the metric")
         metric = hndl.process_data_direct(data)
-        self.__plot_characteristic(
-            data=metric,
-            path2save=path,
-            file_name=file_name
-        )
+        self.__plot_characteristic(data=metric, path2save=path, file_name=file_name)
 
     def __plot_characteristic(self, data: dict, path2save: str, file_name: str) -> None:
-        self._logger.info('Plotting the signals')
+        self._logger.info("Plotting the signals")
         hndl = MetricCalculator()
         file_name_wo_ext = splitext(file_name)[0]
 
-        xtext = r'Voltage $V_{in}$ [V]'
+        xtext = r"Voltage $V_{in}$ [V]"
         plot_transfer_function_norm(
             data=data,
             path2save=path2save,
             xlabel=xtext,
-            ylabel='ADC Output',
-            title='',
-            file_name=f"{file_name_wo_ext}_norm"
+            ylabel="ADC Output",
+            title="",
+            file_name=f"{file_name_wo_ext}_norm",
         )
         plot_transfer_function_metric(
             data=data,
             func=hndl.calculate_lsb,
             path2save=path2save,
             xlabel=xtext,
-            ylabel='ADC LSB [V]',
-            title='',
-            file_name=f"{file_name_wo_ext}_lsb"
+            ylabel="ADC LSB [V]",
+            title="",
+            file_name=f"{file_name_wo_ext}_lsb",
         )
         plot_transfer_function_metric(
             data=data,
             func=hndl.calculate_dnl,
             path2save=path2save,
             xlabel=xtext,
-            ylabel='ADC DNL',
-            title='',
-            file_name=f"{file_name_wo_ext}_dnl"
+            ylabel="ADC DNL",
+            title="",
+            file_name=f"{file_name_wo_ext}_dnl",
         )

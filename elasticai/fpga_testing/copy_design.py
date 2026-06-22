@@ -1,5 +1,5 @@
 from pathlib import Path
-from shutil import copytree, copyfile
+from shutil import copyfile, copytree
 
 
 def copy_design_arty7_files(dest: Path) -> None:
@@ -8,17 +8,11 @@ def copy_design_arty7_files(dest: Path) -> None:
     :return:        None
     """
     import elasticai.fpga_testing as dut
+
     path2design = Path(dut.__file__).parent / "arty7"
 
-    dest.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-    copytree(
-        src=path2design,
-        dst=dest,
-        dirs_exist_ok=True
-    )
+    dest.mkdir(parents=True, exist_ok=True)
+    copytree(src=path2design, dst=dest, dirs_exist_ok=True)
 
 
 def copy_design_env5_files(dest: Path) -> None:
@@ -27,17 +21,11 @@ def copy_design_env5_files(dest: Path) -> None:
     :return:        None
     """
     import elasticai.fpga_testing as dut
+
     path2design = Path(dut.__file__).parent / "env5"
 
-    dest.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-    copytree(
-        src=path2design,
-        dst=dest,
-        dirs_exist_ok=True
-    )
+    dest.mkdir(parents=True, exist_ok=True)
+    copytree(src=path2design, dst=dest, dirs_exist_ok=True)
 
 
 def copy_design_gatemate_files(dest: Path) -> None:
@@ -46,17 +34,11 @@ def copy_design_gatemate_files(dest: Path) -> None:
     :return:        None
     """
     import elasticai.fpga_testing as dut
+
     path2design = Path(dut.__file__).parent / "gatemate"
 
-    dest.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-    copytree(
-        src=path2design,
-        dst=dest,
-        dirs_exist_ok=True
-    )
+    dest.mkdir(parents=True, exist_ok=True)
+    copytree(src=path2design, dst=dest, dirs_exist_ok=True)
 
 
 def copy_skeleton(name: str, dest: Path) -> None:
@@ -69,6 +51,7 @@ def copy_skeleton(name: str, dest: Path) -> None:
         raise ValueError(f"{name} is not a valid skeleton name")
 
     import elasticai.fpga_testing as dut
+
     path2design = Path(dut.__file__).parent / "skeleton"
     copyfile(
         src=path2design / f"skeleton_{name}.v",
@@ -100,21 +83,15 @@ def copy_vivado_implementation_results(path2project: Path, path2save: Path) -> N
     file_copy.append(list(path2results.glob("*_timing_summary_routed.rpt"))[0])
     file_copy.append(list(path2results.glob("*_utilization_placed.rpt"))[0])
 
-    path2save.mkdir(
-        parents=True,
-        exist_ok=True
-    )
+    path2save.mkdir(parents=True, exist_ok=True)
     for file in file_copy:
-        copyfile(
-            src=file.absolute(),
-            dst=path2save / file.name
-        )
+        copyfile(src=file.absolute(), dst=path2save / file.name)
 
 
 if __name__ == "__main__":
     from elasticai.fpga_testing import get_path_to_project
-    import elasticai.fpga_testing as dut
+
     copy_vivado_implementation_results(
         path2project=Path(get_path_to_project("fpga_design")),
-        path2save=Path(get_path_to_project("artefact")) / "env5"
+        path2save=Path(get_path_to_project("artefact")) / "env5",
     )

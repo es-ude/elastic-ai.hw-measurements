@@ -1,40 +1,50 @@
-import pyvisa
 import platform
+from logging import Logger, getLogger
 from time import sleep, strftime
-from logging import getLogger, Logger
+
+import pyvisa
 from RsInstrument import RsInstrument
 from serial.tools import list_ports
+
 from elasticai.hw_measurements.scan_instruments import scan_instruments
-from elasticai.hw_measurements.units import *
+from elasticai.hw_measurements.units import MHz, Threeway, mHz
 
 
 class DriverMXO4X:
     SerialDevice: pyvisa.Resource | RsInstrument
     SerialActive = False
     _device_name_chck = "MXO"
-    _usb_vid = 0x0aad
-    _usb_pid = 0x0197    # for some reason NGU and MXO share the same PID
+    _usb_vid = 0x0AAD
+    _usb_pid = 0x0197  # for some reason NGU and MXO share the same PID
     _logger: Logger
 
-    _gen_index = 1      # which generator to configure if none is explicitly stated
-    _logic_group = 1    # which logic group to configure if none is explicitly stated
+    _gen_index = 1  # which generator to configure if none is explicitly stated
+    _logic_group = 1  # which logic group to configure if none is explicitly stated
     _output_config = 1  # which screenshot output configuration to use if none is explicitly stated
-    _trig_seq = False   # is trigger source sequence (else single)?
-    _cmd_stack = []     # all executed commands are stored here LIFO for debugging purposes
+    _trig_seq = False  # is trigger source sequence (else single)?
+    _cmd_stack = []  # all executed commands are stored here LIFO for debugging purposes
     _firmware_version: str
     _visa_lib: str
-    src_analogue = tuple(f"C{i}" for i in range(1,5))
+    src_analogue = tuple(f"C{i}" for i in range(1, 5))
     src_digital = tuple(f"D{i}" for i in range(16))
-    src_math = tuple(f"M{i}" for i in range(1,6))
-    src_reference = tuple(f"R{i}" for i in range(1,5))
-    src_specmax = tuple(f"SPECMAXH{i}" for i in range(1,5))
-    src_specmin = tuple(f"SPECMINH{i}" for i in range(1,5))
-    src_specnorm = tuple(f"SPECNORM{i}" for i in range(1,5))
-    src_specaver = tuple(f"SPECAVER{i}" for i in range(1,5))
+    src_math = tuple(f"M{i}" for i in range(1, 6))
+    src_reference = tuple(f"R{i}" for i in range(1, 5))
+    src_specmax = tuple(f"SPECMAXH{i}" for i in range(1, 5))
+    src_specmin = tuple(f"SPECMINH{i}" for i in range(1, 5))
+    src_specnorm = tuple(f"SPECNORM{i}" for i in range(1, 5))
+    src_specaver = tuple(f"SPECAVER{i}" for i in range(1, 5))
     src_spectrum = src_specmax + src_specmin + src_specnorm + src_specaver
     src_all = src_analogue + src_digital + src_math + src_reference + src_spectrum
-    src_groups = (src_analogue, src_digital, src_math, src_reference,
-                  src_specmax, src_specmin, src_specnorm, src_specaver)
+    src_groups = (
+        src_analogue,
+        src_digital,
+        src_math,
+        src_reference,
+        src_specmax,
+        src_specmin,
+        src_specnorm,
+        src_specaver,
+    )
 
     def __init__(self):
         """Class for handling the Rohde and Schwarz Mixed-Signal Oscilloscope MXO44 in Python"""
@@ -64,7 +74,7 @@ class DriverMXO4X:
             Queried data as a string
         """
         try:
-            text_out = ""   # default value needed, else variable may never be assigned!
+            text_out = ""  # default value needed, else variable may never be assigned!
             text_out = self.SerialDevice.query(order)
         except Exception as e:
             self._cmd_stack.append((order, f"FAILED - {e} - {text_out}"))
@@ -72,7 +82,7 @@ class DriverMXO4X:
         else:
             self._cmd_stack.append((order, text_out))
         return text_out
-    
+
     def view_cmd_stack(self, entries: int = 0):
         i = 1
         for cmd in self._cmd_stack[-entries:][::-1]:
@@ -82,7 +92,7 @@ class DriverMXO4X:
                 cmd, out = cmd[0], cmd[1]
                 print(f"{i:03}> {cmd}\n     >> {out}")
             i += 1
-    
+
     def sync_device_time(self) -> None:
         """Synchronise the device's time with this computer's. This is done automatically on every connection
         Returns:
@@ -114,23 +124,23 @@ class DriverMXO4X:
         id_back = self.get_id(False)
         self.SerialActive = self._device_name_chck in id_back
         if self.SerialActive:
-            self._firmware_version = id_back.split(',')[-1]
+            self._firmware_version = id_back.split(",")[-1]
 
     def __fix_gen_index(self, gen_index: int) -> int:
-        if gen_index is None or gen_index not in (1,2):
+        if gen_index is None or gen_index not in (1, 2):
             return self._gen_index
         else:
             return gen_index
 
     def __fix_logic_index(self, logic_group: int) -> int:
-        if logic_group is None or logic_group not in (1,2,3,4):
+        if logic_group is None or logic_group not in (1, 2, 3, 4):
             return self._logic_group
         else:
             return logic_group
 
     def __clamp(self, x, y, z):
         return min(max(x, y), z)
-    
+
     def __suspend_timeout(self, timeout):
         if type(self.SerialDevice) == RsInstrument:
             backup_timeout = self.SerialDevice.visa_timeout
@@ -142,8 +152,8 @@ class DriverMXO4X:
             self.SerialDevice.timeout = timeout
             yield
             self.SerialDevice.timeout = backup_timeout
-    
-    def sync(self, timeout = 86400000) -> None:
+
+    def sync(self, timeout=86400000) -> None:
         """Wait until all queued commands have been processed
         Args:
             timeout: timeout in milliseconds, VISA exception thrown on timeout, default 1 day
@@ -175,12 +185,19 @@ class DriverMXO4X:
     def scan_com_name(self) -> list:
         """Returning the COM Port name of the addressable devices"""
         available_coms = list_ports.comports()
-        list_right_com = [port.device for port in available_coms if
-                          port.vid == self._usb_vid and port.pid == self._usb_pid]
+        list_right_com = [
+            port.device
+            for port in available_coms
+            if port.vid == self._usb_vid and port.pid == self._usb_pid
+        ]
         if len(list_right_com) == 0:
-            errmsg = '\n'.join([f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms])
-            raise ConnectionError(f"No COM Port with right USB found - Please adapt the VID and PID values from "
-                                  f"available COM ports:\n{errmsg}")
+            errmsg = "\n".join(
+                [f"{port.usb_description()} {port.device} {port.usb_info()}" for port in available_coms]
+            )
+            raise ConnectionError(
+                f"No COM Port with right USB found - Please adapt the VID and PID values from "
+                f"available COM ports:\n{errmsg}"
+            )
         self._logger.debug(f"Found {len(list_right_com)} COM ports available")
         return list_right_com
 
@@ -252,7 +269,7 @@ class DriverMXO4X:
         Returns:
             None
         """
-        self.__write_to_dev(f"SYST:DISP:MESS:STAT ON")
+        self.__write_to_dev("SYST:DISP:MESS:STAT ON")
         self.__write_to_dev(f"SYST:DISP:MESS '{text}'")
 
     def gen_set_default_index(self, gen_index: int) -> bool:
@@ -262,7 +279,7 @@ class DriverMXO4X:
         Returns:
             True if generator index is not 1 or 2
         """
-        if gen_index not in (1,2):
+        if gen_index not in (1, 2):
             return True
         self._gen_index = gen_index
         return False
@@ -314,12 +331,21 @@ class DriverMXO4X:
             True if waveform function is invalid
         """
         functions = {
-            "SINE": "SIN", "SQUARE": "SQU", "RAMP": "RAMP", "DC": "DC", "PULSE": "PULS",
-            "CARDINAL": "SINC", "CARDIAC": "CARD", "GAUSS": "GAUS", "LORENTZ": "LORN",
-            "EXP RISE": "EXPR", "EXP FALL": "EXPF", "ARBITRARY": "ARB"
+            "SINE": "SIN",
+            "SQUARE": "SQU",
+            "RAMP": "RAMP",
+            "DC": "DC",
+            "PULSE": "PULS",
+            "CARDINAL": "SINC",
+            "CARDIAC": "CARD",
+            "GAUSS": "GAUS",
+            "LORENTZ": "LORN",
+            "EXP RISE": "EXPR",
+            "EXP FALL": "EXPF",
+            "ARBITRARY": "ARB",
         }
         for value in list(functions.values()):
-            functions[value] = value    # make it possible to use the abbreviations as well
+            functions[value] = value  # make it possible to use the abbreviations as well
         if waveform.upper() not in functions:
             return True
         gen_index = self.__fix_gen_index(gen_index)
@@ -347,7 +373,7 @@ class DriverMXO4X:
         """
         if not (0.01 <= amplitude <= 12):
             return True
-        amplitude /= 1.08   # constant factor to fix offset
+        amplitude /= 1.08  # constant factor to fix offset
         gen_index = self.__fix_gen_index(gen_index)
         self.__write_to_dev(f"WGEN{gen_index}:VOLT {amplitude:.2f}")
         return False
@@ -385,7 +411,7 @@ class DriverMXO4X:
         Returns:
             True if given group does not exist
         """
-        if logic_group not in (1,2,3,4):
+        if logic_group not in (1, 2, 3, 4):
             return True
         self._logic_group = logic_group
         return False
@@ -414,7 +440,7 @@ class DriverMXO4X:
         Returns:
             True if selected technology is unsupported
         """
-        valid_techs = (15,25,165,125,9,-13,38,20,0)
+        valid_techs = (15, 25, 165, 125, 9, -13, 38, 20, 0)
         if tech not in valid_techs:
             return True
         logic_group = self.__fix_logic_index(logic_group)
@@ -440,7 +466,7 @@ class DriverMXO4X:
         Returns:
             True if channel group is invalid or threshold out of range
         """
-        if channel_group not in (1,2,3,4) or not (-8 <= threshold <= 8):
+        if channel_group not in (1, 2, 3, 4) or not (-8 <= threshold <= 8):
             return True
         logic_group = self.__fix_logic_index(logic_group)
         self.__write_to_dev(f"PBUS{logic_group}:THR{channel_group} {threshold}")
@@ -508,7 +534,7 @@ class DriverMXO4X:
         Returns:
             True if channel group or hysteresis is invalid
         """
-        if channel_group not in (1,2,3,4):
+        if channel_group not in (1, 2, 3, 4):
             return True
         logic_group = self.__fix_logic_index(logic_group)
         levels_str = ["NORMAL", "ROBUST", "MAXIMUM"]
@@ -580,7 +606,7 @@ class DriverMXO4X:
         return self.__read_from_dev(f"PBUS{logic_group}:DATA:HEAD?")
 
     def __fix_output_config(self, output_config: int) -> int:
-        return output_config if output_config in (1,2) else self._output_config
+        return output_config if output_config in (1, 2) else self._output_config
 
     def sshot_get_default_config(self):
         """Get the number of the default screenshot output configuration
@@ -679,7 +705,7 @@ class DriverMXO4X:
     def sshot_include_dialog_box(self, state: bool, output_config: int = None) -> None:
         """Include any open dialog box in a screenshot
         Args:
-            state: True to include dialog boxes on screenshots, False to hide them 
+            state: True to include dialog boxes on screenshots, False to hide them
         Returns:
             None
         """
@@ -726,9 +752,17 @@ class DriverMXO4X:
         Returns:
             True if source or event invalid
         """
-        sources = ([f"C{i}" for i in range(1, 5)] + [f"D{i}" for i in range(16)]
-                   + [f"SBUS{i}" for i in range(1, 5)] + ["EXT", "LINE"])
-        if (self._trig_seq and source not in sources[:4]) or (source not in sources) or (event not in (1,2,3)):
+        sources = (
+            [f"C{i}" for i in range(1, 5)]
+            + [f"D{i}" for i in range(16)]
+            + [f"SBUS{i}" for i in range(1, 5)]
+            + ["EXT", "LINE"]
+        )
+        if (
+            (self._trig_seq and source not in sources[:4])
+            or (source not in sources)
+            or (event not in (1, 2, 3))
+        ):
             return True
         self.__write_to_dev(f"TRIG:EVEN{event}:SOUR {source}")
         return False
@@ -797,7 +831,7 @@ class DriverMXO4X:
             type = "AONL"
         self.__write_to_dev("TRIG:MEV:AEV " + type)
         return False
-    
+
     def trig_level(self, level: float, channel: int = 1, event: int = 1) -> bool:
         """Sets the trigger level for the specified event and source (channel).
         If the trigger source is serial bus, the trigger level is set by the
@@ -809,12 +843,12 @@ class DriverMXO4X:
         Returns:
             True if channel or event is invalid
         """
-        if channel not in (1,2,3,4) or event not in (1,2,3):
+        if channel not in (1, 2, 3, 4) or event not in (1, 2, 3):
             return True
         level = self.__clamp(-10, level, 10)
         self.__write_to_dev(f"TRIG:EVEN{event}:LEV{channel} {level:.3f}")
         return False
-    
+
     def trig_find_level(self) -> None:
         """Automatically sets trigger level to 0.5 * (MaxPeak - MinPeak).
         In a trigger sequence, all events (A, B and R) are affected.
@@ -823,7 +857,7 @@ class DriverMXO4X:
             None
         """
         self.__write_to_dev("TRIG:FIND")
-    
+
     def trig_edge_direction(self, direction: Threeway, event: int = 1) -> bool:
         """Set edge direction for trigger
         Args:
@@ -833,22 +867,22 @@ class DriverMXO4X:
         Returns:
             True if direction or event is invalid
         """
-        if direction not in (-1,0,1) or event not in (1,2,3):
+        if direction not in (-1, 0, 1) or event not in (1, 2, 3):
             return True
         args = ["NEG", "EITH", "POS"]
         self.__write_to_dev(f"TRIG:EVEN{event}:EDGE:SLOP {args[direction + 1]}")
         return False
-    
+
     def trig_edge_level(self, level: float) -> None:
         """Set external trigger source trigger level
         Args:
             level: -5 to 5 volts, value is clamped
         Returns:
-            None 
+            None
         """
         level = self.__clamp(-5, level, 5)
         self.__write_to_dev(f"TRIG:ANED:LEV {level}")
-    
+
     def trig_edge_coupling(self, coupling: str) -> bool:
         """Sets the connection of the external trigger signal, i.e. the
         input impedance and a termination. The coupling determines what
@@ -861,7 +895,7 @@ class DriverMXO4X:
                 DC and AC components of the signal.
                 "AC" - Connection with 1 MΩ termination through DC capacitor,
                 removes DC and very low-frequency components. The waveform
-                is centered on zero volts. 
+                is centered on zero volts.
         Returns:
             True if coupling mode is invalid
         """
@@ -869,7 +903,7 @@ class DriverMXO4X:
             return True
         self.__write_to_dev(f"TRIG:ANED:COUP {coupling}")
         return False
-    
+
     def trig_edge_filter(self, filter: Threeway) -> bool:
         """Select filter mode for external signal
         Args:
@@ -877,12 +911,12 @@ class DriverMXO4X:
         Returns:
             True if filter mode is invalid
         """
-        if filter not in (-1,0,1):
+        if filter not in (-1, 0, 1):
             return True
         args = ["RFR", "OFF", "LFR"]
         self.__write_to_dev(f"TRIG:ANED:FILT {args[filter + 1]}")
         return False
-    
+
     def trig_edge_highpass(self, cutoff: int) -> bool:
         """Frequencies below the cutoff frequency are rejected,
         higher frequencies pass the filter
@@ -891,7 +925,7 @@ class DriverMXO4X:
         Returns:
             True if cutoff frequency is invalid
         """
-        if cutoff not in (5,50):
+        if cutoff not in (5, 50):
             return True
         self.__write_to_dev(f"TRIG:ANED:CUT:HIGH KHZ{cutoff}")
         return False
@@ -906,20 +940,20 @@ class DriverMXO4X:
         """
         if cutoff not in (50, 50000):
             return True
-        unit = 'K' if cutoff == 50 else 'M'
+        unit = "K" if cutoff == 50 else "M"
         self.__write_to_dev(f"TRIG:ANED:CUT:LOWP {unit}HZ50")
         return False
-    
+
     def trig_edge_noisereject(self, state: bool) -> None:
         """Enable an automatic hysteresis on the trigger level to
-        avoid unwanted trigger events caused by noise.  
+        avoid unwanted trigger events caused by noise.
         Args:
             state: True for noise rejection, False to disable
         Returns:
             None
         """
         self.__write_to_dev(f"TRIG:ANED:NREJ {int(state)}")
-    
+
     def trig_export_on_trigger(self, state: bool) -> None:
         """Decide whether the waveform is saved to a file on a trigger event
         Args:
@@ -928,28 +962,33 @@ class DriverMXO4X:
             None
         """
         self.__write_to_dev(f"TRIG:ACT:WFMS {'TRIG' if state else 'NOAC'}")
-    
+
     def is_source_active(self, source: str) -> bool:
         if source not in self.src_all:
             return False
-        if self._firmware_version < "2.2.2.1" and source in self.src_spectrum and source[-1] > '1':
-            return False    # support for 4 spectrums only since 2.2.2.1
+        if self._firmware_version < "2.2.2.1" and source in self.src_spectrum and source[-1] > "1":
+            return False  # support for 4 spectrums only since 2.2.2.1
         # determine which group the source belongs to, there can only be one, so index 0
         src_group = tuple(list(filter(lambda xs: source in xs, self.src_groups))[0])
         # get the correct command structure according to the source group, then
         # insert the channel number taken from the source string into the {} placeholder
-        return bool(int(self.__read_from_dev({
-            self.src_analogue: "CHAN{}:STAT?",
-            self.src_digital: "DIG{}:STAT?",
-            self.src_math: "CALC:MATH{}:STAT?",
-            self.src_reference: "REFC{}:STAT?",
-            self.src_specnorm: "CALC:SPEC{}:STAT?",
-            self.src_specaver: "CALC:SPEC{}:STAT?",
-            self.src_specmin: "CALC:SPEC{}:STAT?",
-            self.src_specmax: "CALC:SPEC{}:STAT?",
-        }[src_group].format("".join(filter(str.isnumeric, source))))))
-        
-    
+        return bool(
+            int(
+                self.__read_from_dev(
+                    {
+                        self.src_analogue: "CHAN{}:STAT?",
+                        self.src_digital: "DIG{}:STAT?",
+                        self.src_math: "CALC:MATH{}:STAT?",
+                        self.src_reference: "REFC{}:STAT?",
+                        self.src_specnorm: "CALC:SPEC{}:STAT?",
+                        self.src_specaver: "CALC:SPEC{}:STAT?",
+                        self.src_specmin: "CALC:SPEC{}:STAT?",
+                        self.src_specmax: "CALC:SPEC{}:STAT?",
+                    }[src_group].format("".join(filter(str.isnumeric, source)))
+                )
+            )
+        )
+
     def export_scope(self, scope: str) -> bool:
         """Defines the part of the waveform record that will be stored
         Args:
@@ -968,7 +1007,7 @@ class DriverMXO4X:
             return True
         self.__write_to_dev(f"EXP:WAV:SCOP {scope}")
         return False
-    
+
     def export_manual_start(self, time: float) -> None:
         """Set the start time value for waveform export in MANUAL mode
         Args:
@@ -979,7 +1018,7 @@ class DriverMXO4X:
         """
         time = self.__clamp(-1e26, time, 1e26)
         self.__write_to_dev(f"EXP:WAV:STAR {time:.2f}")
-    
+
     def export_manual_stop(self, time: float) -> None:
         """Set the end time value for waveform export in MANUAL mode
         Args:
@@ -990,21 +1029,21 @@ class DriverMXO4X:
         """
         time = self.__clamp(-1e26, time, 1e26)
         self.__write_to_dev(f"EXP:WAV:STOP {time:.2f}")
-    
+
     def export_save(self) -> None:
         """Save the waveform to the specified file
         Returns:
             None
         """
         self.__write_to_dev("EXP:WAV:SAVE")
-    
+
     def export_abort(self) -> None:
         """Abort a running export started by export_save()
         Returns:
             None
         """
         self.__write_to_dev("EXP:WAV:ABOR")
-    
+
     def export_cursor_set(self, set: int) -> bool:
         """If export scope was set to CURSOR, set the cursor set to be used
         Args:
@@ -1012,14 +1051,14 @@ class DriverMXO4X:
         Returns:
             True if cursor set is not 1 or 2
         """
-        if set not in (1,2):
+        if set not in (1, 2):
             return True
         self.__write_to_dev(f"EXP:WAV:CURS CURSOR{set}")
         return False
-    
+
     def export_sources(self, *src: str) -> bool:
         """Select all waveforms to be exported to the file. At least firmware (2.3.2.2) needed for multiple waveforms,
-        else only the first source is selected.                                                                                                                                                                  
+        else only the first source is selected.
         Args:
             *src: One or more of the following waveforms
                 Analogue - "C1","C2","C3","C4".
@@ -1040,7 +1079,7 @@ class DriverMXO4X:
         else:
             return True
         return False
-    
+
     def export_set_filename(self, filename: str) -> bool:
         """Set the filename for waveform exports. Local storage is in /home/storage/userData
         Args:
@@ -1050,19 +1089,21 @@ class DriverMXO4X:
             True if filename doesn't end on .csv, .ref or .zip no other checks are done!
         """
         filename = filename.strip()
-        valid_extensions = (".ref", ".zip") if ',' in self.__read_from_dev("EXP:WAV:SOUR?") else (".csv", ".ref")
+        valid_extensions = (
+            (".ref", ".zip") if "," in self.__read_from_dev("EXP:WAV:SOUR?") else (".csv", ".ref")
+        )
         if filename[-4:] not in valid_extensions:
             return True
         self.__write_to_dev(f"EXP:WAV:NAME '{filename}'")
         return False
-    
+
     def export_get_filename(self) -> str:
         """Get the currently set filename for waveform exports
         Returns:
             Path and filename for waveform exports as a string
         """
         return self.__read_from_dev("EXP:WAV:NAME?")[1:-1]
-    
+
     def fra_enter(self) -> None:
         """Enter frequency response analysis mode. This is done automatically whenever an FRA function is called.
         Returns:
@@ -1070,7 +1111,7 @@ class DriverMXO4X:
         """
         self.__write_to_dev("FRAN:ENAB ON")
         self.sync()
-    
+
     def fra_exit(self):
         """Exit frequency response analysis mode
         Returns:
@@ -1078,7 +1119,7 @@ class DriverMXO4X:
         """
         self.__write_to_dev("FRAN:ENAB OFF")
         self.sync()
-    
+
     def fra_freq_start(self, freq: float) -> None:
         """Set the start frequency of the sweep
         Args:
@@ -1087,9 +1128,9 @@ class DriverMXO4X:
             None
         """
         self.fra_enter()
-        freq = self.__clamp(10*mHz, freq, 100*MHz)
+        freq = self.__clamp(10 * mHz, freq, 100 * MHz)
         self.__write_to_dev(f"FRAN:FREQ:STAR {freq:.2f}")
-    
+
     def fra_freq_stop(self, freq: float) -> None:
         """Set the stop frequency of the sweep
         Args:
@@ -1098,9 +1139,9 @@ class DriverMXO4X:
             None
         """
         self.fra_enter()
-        freq = self.__clamp(10*mHz, freq, 100*MHz)
+        freq = self.__clamp(10 * mHz, freq, 100 * MHz)
         self.__write_to_dev(f"FRAN:FREQ:STOP {freq:.2f}")
-    
+
     def fra_run(self) -> None:
         """Run the frequency response analysis
         Returns:
@@ -1108,7 +1149,7 @@ class DriverMXO4X:
         """
         self.fra_enter()
         self.__write_to_dev("FRAN:STAT RUN")
-    
+
     def fra_stop(self) -> None:
         """Stop the frequency response analysis
         Returns:
@@ -1116,7 +1157,7 @@ class DriverMXO4X:
         """
         self.fra_enter()
         self.__write_to_dev("FRAN:STAT STOP")
-    
+
     def fra_generator(self, channel: int) -> bool:
         """Select built-in generator for a frequency sweep
         Args:
@@ -1124,16 +1165,16 @@ class DriverMXO4X:
         Returns:
             True for invalid channel number
         """
-        if channel not in (1,2):
+        if channel not in (1, 2):
             return True
         self.fra_enter()
         self.__write_to_dev(f"FRAN:GEN GEN{channel}")
         return False
-    
+
     def fra_generator_amplitude(self, amplitude: float) -> None:
-        self.__clamp(.01, amplitude, 12)
+        self.__clamp(0.01, amplitude, 12)
         self.__write_to_dev(f"FRAN:GEN:AMPL {amplitude:.2f}")
-                                                                                        
+
     def fra_input_channel(self, channel: int) -> bool:
         """Set the channel used for the input signal of the device
         Args:
@@ -1141,12 +1182,12 @@ class DriverMXO4X:
         Returns:
             True for invalid channel number
         """
-        if channel not in (1,2,3,4):
+        if channel not in (1, 2, 3, 4):
             return True
         self.fra_enter()
         self.__write_to_dev(f"FRAN:INP C{channel}")
         return False
-    
+
     def fra_output_channel(self, channel: int) -> bool:
         """Set the channel used for the output signal of the device
         Args:
@@ -1154,12 +1195,12 @@ class DriverMXO4X:
         Returns:
             True for invalid channel number
         """
-        if channel not in (1,2,3,4):
+        if channel not in (1, 2, 3, 4):
             return True
         self.fra_enter()
         self.__write_to_dev(f"FRAN:OUTP C{channel}")
         return False
-    
+
     def fra_repeat(self, state: bool) -> None:
         """Whether to repeat the measurement using the same parameters
         Args:
@@ -1169,7 +1210,7 @@ class DriverMXO4X:
         """
         self.fra_enter()
         self.__write_to_dev(f"FRAN:REP {int(state)}")
-    
+
     def fra_reset(self) -> None:
         """Reset the frequency response analysis
         Returns:
@@ -1177,7 +1218,7 @@ class DriverMXO4X:
         """
         self.fra_enter()
         self.__write_to_dev("FRAN:RES")
-    
+
     def fra_autoscale(self, state: bool) -> None:
         """Enable or disable the autoscaling function for each measurement
         Args:
@@ -1187,7 +1228,7 @@ class DriverMXO4X:
         """
         self.fra_enter()
         self.__write_to_dev(f"FRAN:AUT {int(state)}")
-    
+
     def fra_with_offset(self, offset: float = 0, wait_time: float = 1) -> None:
         """Start an FRA using the PCB-Addon board to generate a waveform and add an offset
         to it. GEN1 is the signal generator and GEN2 is the DC offset.
@@ -1203,7 +1244,7 @@ class DriverMXO4X:
         self.gen_offset(offset, 2)
         sleep(wait_time)
         self.fra_run()
-    
+
     def fra_export_results(self, results: bool = None, marker: bool = None, margin: bool = None) -> None:
         """Export the results of the FRA measurement to a file
         Args:
@@ -1216,13 +1257,13 @@ class DriverMXO4X:
         self.fra_enter()
         states = [results, marker, margin]
         cmds = [f"EXP:RES:SEL:FRA:{x}" for x in ["RES", "MARK", "MARG"]]
-        if all(int(self.__read_from_dev(c+'?')) == 0 for c in cmds) or all(not s for s in states):
-            states[0] = True  
-        for (state, cmd) in zip(states, cmds):
+        if all(int(self.__read_from_dev(c + "?")) == 0 for c in cmds) or all(not s for s in states):
+            states[0] = True
+        for state, cmd in zip(states, cmds):
             if state is not None:
                 self.__write_to_dev(f"{cmd} {int(state)}")
         self.__write_to_dev("EXP:RES:SAVE")
-    
+
     def fra_wait_for_finish(self) -> None:
         """Wait for the FRA analysis to finish. This is a blocking function
         Returns:
@@ -1232,7 +1273,7 @@ class DriverMXO4X:
         for _ in self.__suspend_timeout(86400000):
             while self.__read_from_dev("FRAN:STAT?") == "RUN":
                 sleep(0.1)
-    
+
     def live_command_mode(self) -> None:
         """DEBUGGING - enter statements during the execution of the program using the Python
         interpreter. Results and errors are printed.
@@ -1259,7 +1300,7 @@ class DriverMXO4X:
         Returns:
             Result of the command if it was a query, None if it was a write command
         """
-        if '?' in cmd:
+        if "?" in cmd:
             return self.__read_from_dev(cmd)
         else:
             self.__write_to_dev(cmd)

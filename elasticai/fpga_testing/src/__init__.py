@@ -1,5 +1,6 @@
 from .exp_dut import (
-    ConfigurationDUT,
-    DeviceUnderTestHandler
+    ConfigurationDUT as ConfigurationDUT,
 )
-from .helper import get_path_to_project
+from .exp_dut import (
+    DeviceUnderTestHandler as DeviceUnderTestHandler,
+)

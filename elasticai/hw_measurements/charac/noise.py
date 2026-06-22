@@ -1,7 +1,9 @@
+from logging import Logger, getLogger
+
 import numpy as np
-from logging import getLogger, Logger
-from scipy.signal import welch, find_peaks
-from elasticai.hw_measurements import TransientNoiseSpectrum, MetricNoise
+from scipy.signal import find_peaks, welch
+
+from elasticai.hw_measurements import MetricNoise, TransientNoiseSpectrum
 from elasticai.hw_measurements.plots import scale_auto_value
 
 
@@ -66,9 +68,7 @@ class CharacterizationNoise:
             data_chan.pop(item - idx)
 
         self._spec = TransientNoiseSpectrum(
-            freq=np.array(data_freq),
-            spec=np.array(data_spec),
-            chan=data_chan
+            freq=np.array(data_freq), spec=np.array(data_spec), chan=data_chan
         )
 
     def extract_transient_metrics(self) -> MetricNoise:
@@ -82,8 +82,8 @@ class CharacterizationNoise:
         offset_mead = np.median(self._signal, axis=-1)
 
         offset = np.tile(offset_mean[:, None], (1, self._signal.shape[1]))
-        peak_pos = np.max(self._signal-offset, axis=-1)
-        peak_neg = np.min(self._signal-offset, axis=-1)
+        peak_pos = np.max(self._signal - offset, axis=-1)
+        peak_neg = np.min(self._signal - offset, axis=-1)
         peak_peak = peak_pos - peak_neg
 
         self._metric = MetricNoise(
@@ -94,7 +94,9 @@ class CharacterizationNoise:
         )
         return self._metric
 
-    def extract_noise_power_distribution(self, scale: float=1.0, num_segments: int=16354) -> TransientNoiseSpectrum:
+    def extract_noise_power_distribution(
+        self, scale: float = 1.0, num_segments: int = 16354
+    ) -> TransientNoiseSpectrum:
         """Function to extract noise power distribution from transient measurement
         :param scale:           Floating value to scale the transient measurement, e.g. to scale the digital output to voltage
         :param num_segments:    Number of samples in the noise spectral density
@@ -109,51 +111,50 @@ class CharacterizationNoise:
             offset = np.mean(sig_ch)
             f, Pxx = welch(
                 x=scale * (sig_ch - offset),
-                window='hann',
-                scaling='density',
+                window="hann",
+                scaling="density",
                 fs=self._fs,
-                nperseg=2*num_segments,
+                nperseg=2 * num_segments,
                 return_onesided=True,
             )
             freq.append(f)
             NPow.append(np.sqrt(Pxx))
 
-        self._spec = TransientNoiseSpectrum(
-            freq=np.array(freq),
-            spec=np.array(NPow),
-            chan=self._channels
-        )
+        self._spec = TransientNoiseSpectrum(freq=np.array(freq), spec=np.array(NPow), chan=self._channels)
         return self._spec
 
     @staticmethod
-    def _get_values_around_multiples(data: list, reference: float, num_harmonics: int, tolerance: float=2.0) -> list:
+    def _get_values_around_multiples(
+        data: list, reference: float, num_harmonics: int, tolerance: float = 2.0
+    ) -> list:
         result = []
         for value in data:
-            if abs(value - (1+len(result)) * reference) <= tolerance:
+            if abs(value - (1 + len(result)) * reference) <= tolerance:
                 result.append(value)
             if len(result) == num_harmonics:
                 continue
         return result
 
-    def remove_power_line_noise(self, tolerance: float=5., num_harmonics: int=10) -> TransientNoiseSpectrum:
+    def remove_power_line_noise(
+        self, tolerance: float = 5.0, num_harmonics: int = 10
+    ) -> TransientNoiseSpectrum:
         """Function for removing the power line noise in the spectrum
         :param tolerance:       Floating tolerance value around the power line frequency (= 50 Hz)
         :param num_harmonics:   Number of harmonics to remove
         :return:                Dataclass of TransientNoiseSpectrum
         """
-        pl_line_freq = 50.
+        pl_line_freq = 50.0
         if len(self._channels) == 0:
             raise ValueError("Data is not loaded. Please load data first.")
 
-        peak_freq = self._spec.freq[0,:][find_peaks(
-            x=self._spec.spec[0,:],
-            distance=int(0.9*pl_line_freq / self._spec.freq[0,:][1]),
-        )[0]]
+        peak_freq = self._spec.freq[0, :][
+            find_peaks(
+                x=self._spec.spec[0, :],
+                distance=int(0.9 * pl_line_freq / self._spec.freq[0, :][1]),
+            )[0]
+        ]
         pl_peak_freq = self._get_values_around_multiples(
-            data=peak_freq,
-            reference=pl_line_freq,
-            num_harmonics=num_harmonics,
-            tolerance=tolerance
+            data=peak_freq, reference=pl_line_freq, num_harmonics=num_harmonics, tolerance=tolerance
         )
         if pl_peak_freq:
             df = 0.5
@@ -161,9 +162,9 @@ class CharacterizationNoise:
             for f_ch, noise_ch in zip(self._spec.freq, self._spec.spec):
                 for pl_f0 in pl_peak_freq:
                     mask = (f_ch >= pl_f0 - df) & (f_ch <= pl_f0 + df)
-                    mask_pos = np.argwhere(mask == True).flatten()
+                    mask_pos = np.argwhere(mask).flatten()
                     if mask_pos.size > 0:
-                        noise_ch[mask_pos] = noise_ch[mask_pos[0]-1]
+                        noise_ch[mask_pos] = noise_ch[mask_pos[0] - 1]
                 noise_spectrum_new.append(noise_ch)
         else:
             noise_spectrum_new = self._spec.spec
@@ -183,23 +184,29 @@ class CharacterizationNoise:
 
         scale, unit = scale_auto_value(self._spec.spec)
         eff_noise_rms = list()
-        fmin = 0.
-        fmax = 0.
         for f_ch, noise_ch in zip(self._spec.freq, self._spec.spec):
-            noise_eff = np.sqrt(np.trapezoid(
-                y=noise_ch ** 2,
-                x=f_ch,
-            ))
+            noise_eff = np.sqrt(
+                np.trapezoid(
+                    y=noise_ch**2,
+                    x=f_ch,
+                )
+            )
             eff_noise_rms.append(noise_eff)
 
         eff_noise_rms = np.array(eff_noise_rms)
-        print(f"Available RMS noise [{unit}V]: {scale * eff_noise_rms} ({self._spec.freq[0,0]:.1f}-{self._spec.freq[0,-1]:.1f} Hz)")
-        print(f"Available RMS noise over all channels [{unit}V]: "
-              f"{np.mean(scale * eff_noise_rms)} +/- {np.std(scale * eff_noise_rms)} "
-              f"(num_channels={self.get_num_channels})")
+        print(
+            f"Available RMS noise [{unit}V]: {scale * eff_noise_rms} ({self._spec.freq[0, 0]:.1f}-{self._spec.freq[0, -1]:.1f} Hz)"
+        )
+        print(
+            f"Available RMS noise over all channels [{unit}V]: "
+            f"{np.mean(scale * eff_noise_rms)} +/- {np.std(scale * eff_noise_rms)} "
+            f"(num_channels={self.get_num_channels})"
+        )
         return eff_noise_rms
 
-    def extract_noise_rms_specific(self, freq_start: float = 0., freq_stop: float = 1000.) -> np.ndarray:
+    def extract_noise_rms_specific(
+        self, freq_start: float = 0.0, freq_stop: float = 1000.0
+    ) -> np.ndarray:
         """Function for extracting the output effective noise voltage from the specific range of the spectrum
         :return:        Numpy array with noise RMS of all channels
         """
@@ -212,15 +219,19 @@ class CharacterizationNoise:
         for f_ch, noise_ch in zip(self._spec.freq, self._spec.spec):
             xstart = np.argwhere(f_ch >= freq_start).flatten()[0]
             xstop = np.argwhere(f_ch >= freq_stop).flatten()[0]
-            noise_eff = np.sqrt(np.trapezoid(
-                y=noise_ch[xstart:xstop] ** 2,
-                x=f_ch[xstart:xstop],
-            ))
+            noise_eff = np.sqrt(
+                np.trapezoid(
+                    y=noise_ch[xstart:xstop] ** 2,
+                    x=f_ch[xstart:xstop],
+                )
+            )
             eff_noise_rms.append(noise_eff)
 
         eff_noise_rms = np.array(eff_noise_rms)
         print(f"Available RMS noise [{unit}V]: {scale * eff_noise_rms} ({freq_start}-{freq_stop} Hz)")
-        print(f"Available RMS noise over all channels [{unit}V]: "
-              f"{np.mean(scale * eff_noise_rms)} +/- {np.std(scale * eff_noise_rms)} "
-              f"(num_channels={self.get_num_channels})")
+        print(
+            f"Available RMS noise over all channels [{unit}V]: "
+            f"{np.mean(scale * eff_noise_rms)} +/- {np.std(scale * eff_noise_rms)} "
+            f"(num_channels={self.get_num_channels})"
+        )
         return eff_noise_rms

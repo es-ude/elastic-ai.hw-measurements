@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -18,23 +19,24 @@ class SettingsMult:
 
     @property
     def generate_data_unsigned(self) -> np.ndarray:
-        return np.linspace(start=0, stop=(2 ** self.bitwidth_data) - 1, num=int((2 ** self.bitwidth_data) / self.step_size), endpoint=True, dtype=int)
+        return np.linspace(
+            start=0,
+            stop=(2**self.bitwidth_data) - 1,
+            num=int((2**self.bitwidth_data) / self.step_size),
+            endpoint=True,
+            dtype=int,
+        )
 
     @property
     def generate_data_signed(self) -> np.ndarray:
-        return self.generate_data_unsigned - 2**(self.bitwidth_data - 1)
+        return self.generate_data_unsigned - 2 ** (self.bitwidth_data - 1)
 
     @property
     def get_data(self) -> np.ndarray:
         return self.generate_data_signed if self.signed_data else self.generate_data_unsigned
 
 
-DefaultSettingsMult = SettingsMult(
-    input_size=2,
-    bitwidth_data = 8,
-    step_size=8,
-    signed_data=True
-)
+DefaultSettingsMult = SettingsMult(input_size=2, bitwidth_data=8, step_size=8, signed_data=True)
 
 
 class ExperimentMult(ExperimentMain):
@@ -48,16 +50,22 @@ class ExperimentMult(ExperimentMain):
         :param device_id: Integer value with device ID of test structure
         """
         super().__init__()
-        self._type_experiment = '_mult'
+        self._type_experiment = "_mult"
 
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsMult
         set.input_size = self.get_num_input_structure
         set.bitwidth_data = self.get_bitwidth_input_structure
-        yaml_handler = YamlConfigHandler(set, yaml_name=f'Config_{device_id:03d}_Math', start_folder=get_path_to_project())
+        yaml_handler = YamlConfigHandler(
+            set, yaml_name=f"Config_{device_id:03d}_Math", start_folder=get_path_to_project()
+        )
         self.__settings_mult = yaml_handler.get_class(SettingsMult)
-        self.__data_scaling_input = 2 ** (self._device.get_bitwidth_data - self.get_bitwidth_input_structure)
-        self.__data_scaling_output = 2 ** (self._device.get_bitwidth_data - self.get_bitwidth_output_structure)
+        self.__data_scaling_input = 2 ** (
+            self._device.get_bitwidth_data - self.get_bitwidth_input_structure
+        )
+        self.__data_scaling_output = 2 ** (
+            self._device.get_bitwidth_data - self.get_bitwidth_output_structure
+        )
 
     @property
     def get_num_input_structure(self) -> int:
@@ -101,21 +109,22 @@ class ExperimentMult(ExperimentMain):
             self._device.preparing_data_arithmetic_architecture(
                 signal=waveform.tolist(),
                 bit_position_start=self.__data_scaling_input,
-                is_signed=self.__settings_mult.signed_data
+                is_signed=self.__settings_mult.signed_data,
             )
         )
 
     def postprocess_data(self) -> np.ndarray:
         """Post-processing the data from device to have in readable format and numpy format"""
         data_return = self._device.slice_data_from_transmission(
-            data=self._buffer_data_get,
-            is_signed=self.__settings_mult.signed_data,
-            stepsize=1
+            data=self._buffer_data_get, is_signed=self.__settings_mult.signed_data, stepsize=1
         )
-        return data_return[1+self.get_num_input_structure::1+self.get_num_input_structure] / self.__data_scaling_output
+        return (
+            data_return[1 + self.get_num_input_structure :: 1 + self.get_num_input_structure]
+            / self.__data_scaling_output
+        )
 
 
-def run_math_on_target(device_id: int, block_plot: bool=False) -> None:
+def run_math_on_target(device_id: int, block_plot: bool = False) -> None:
     """Function for running the echo server test on target device
     :param device_id:       Device ID (unsigned integer) for calling the right target on device
     :param block_plot:      Blocking and showing plot
@@ -126,8 +135,8 @@ def run_math_on_target(device_id: int, block_plot: bool=False) -> None:
     settings_math = exp0.get_settings_func
 
     # Control Routine
-    exp0.init_experiment(f'{device_id:02d}')
-    data_dut = {'process_time': [], 'data_in': [], 'data_out': [], 'data_ref': []}
+    exp0.init_experiment(f"{device_id:02d}")
+    data_dut = {"process_time": [], "data_in": [], "data_out": [], "data_ref": []}
 
     data_used = settings_math.get_data
     data_in = exp0.get_data_input(data_used)
@@ -138,17 +147,18 @@ def run_math_on_target(device_id: int, block_plot: bool=False) -> None:
     data_out = exp0.postprocess_data()
 
     # Saving results
-    data_dut['process_time'].append(time_run)
-    data_dut['data_in'].append(data_used)
-    data_dut['data_out'].append(data_out)
-    data_dut['data_ref'].append(data_ref)
+    data_dut["process_time"].append(time_run)
+    data_dut["data_in"].append(data_used)
+    data_dut["data_out"].append(data_out)
+    data_dut["data_ref"].append(data_ref)
 
-    np.save(f'{exp0.get_path2run}/results_math.npy', data_dut, allow_pickle=True)
+    np.save(f"{exp0.get_path2run}/results_math.npy", data_dut, allow_pickle=True)
     plot_mult_arithmetic(data_out, data_ref, path2save=exp0.get_path2run, block_plot=block_plot)
 
 
-def plot_mult_arithmetic(data_out: np.ndarray, data_ref: np.ndarray,
-                         path2save: str='', block_plot: bool=False) -> None:
+def plot_mult_arithmetic(
+    data_out: np.ndarray, data_ref: np.ndarray, path2save: str = "", block_plot: bool = False
+) -> None:
     """Function for plotting the arithmetic test results
     :param data_out:    Numpy array with output values
     :param data_ref:    Numpy array with reference values
@@ -157,16 +167,16 @@ def plot_mult_arithmetic(data_out: np.ndarray, data_ref: np.ndarray,
     :return:            None
     """
     plt.figure()
-    plt.plot(data_ref, data_out, marker='.', linestyle='None', color=get_color_plot(0))
-    plt.xlabel(r'Digital Input $x$')
-    plt.ylabel(r'Digital Output $y$')
+    plt.plot(data_ref, data_out, marker=".", linestyle="None", color=get_color_plot(0))
+    plt.xlabel(r"Digital Input $x$")
+    plt.ylabel(r"Digital Output $y$")
 
     mae = np.sum(np.abs(data_out - data_ref)) / data_ref.size
-    plt.title(f'MAE = {mae:.4f}')
+    plt.title(f"MAE = {mae:.4f}")
 
     plt.grid(True)
     plt.tight_layout(pad=0.5)
     if path2save:
-        save_figure(plt, path2save, 'arith_test')
+        save_figure(plt, path2save, "arith_test")
     if block_plot:
         plt.show(block=True)
