@@ -3,21 +3,16 @@
 **/docs/apidocs
 **/test_dummy
 **/build*
-**/temp*
+**/temp_*
 **/config
 **/dist
 **/runs
 **/__pycache__
 **/.venv
 **/venv
-**/*.lock
 **/*.log
 **/*.yaml
-uv.lock
 .python-version
-
-### VIVADO files
-**/fpga_design
 
 ### devenv and yosys+nextpnr+OpenFPGA tools
 **/.devenv
