@@ -1,3 +1,5 @@
+from elasticai.hw_measurements.driver.scan_instruments import scan_instruments as scan_instruments
+
 from ._helper import get_path_to_project as get_path_to_project
 from ._helper import init_project_folder as init_project_folder
 from .data_types import FrequencyResponse as FrequencyResponse
@@ -7,5 +9,4 @@ from .data_types import TransientData as TransientData
 from .data_types import TransientNoiseSpectrum as TransientNoiseSpectrum
 from .predefines import DriverPort as DriverPort
 from .predefines import DriverPortIES as DriverPortIES
-from .scan_instruments import scan_instruments as scan_instruments
 from .template import copy_template as copy_template

@@ -5,7 +5,7 @@ import numpy as np
 import pyvisa
 from serial.tools import list_ports
 
-from elasticai.hw_measurements.scan_instruments import scan_instruments
+from .scan_instruments import scan_instruments
 
 
 class DriverHMP40X0:

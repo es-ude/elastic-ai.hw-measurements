@@ -5,7 +5,7 @@ from time import sleep, strftime, time_ns
 import pyvisa
 from serial.tools import list_ports
 
-from elasticai.hw_measurements.scan_instruments import scan_instruments
+from .scan_instruments import scan_instruments
 
 
 class DriverNGUX01:

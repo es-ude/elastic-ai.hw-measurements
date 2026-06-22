@@ -2,10 +2,10 @@ from time import sleep
 
 import pyvisa
 
-from elasticai.hw_measurements.scan_instruments import scan_instruments
 from elasticai.hw_measurements.units import MHz, Threeway
 
 from .mxo4x import DriverMXO4X
+from .scan_instruments import scan_instruments
 
 
 class DriverRTM3004(DriverMXO4X):

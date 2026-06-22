@@ -156,10 +156,16 @@ line-ending = "auto"
 include = ["elasticai"]
 exclude = [
   "elasticai/**/*_test.py",
+  "elasticai/**/*_tb.py",
+  "elasticai/hw_measurements/template/*.py",
+  "elasticai/hw_measurements/driver/*.py",
+  "elasticai/hw_measurements/process/data.py",
+  "elasticai/hw_measurements/plots.py",
 ]
 
 [tool.uv]
 default-groups = ["dev", "docs", "fpga", "lint", "test"]
 
 [tool.uv.sources]
-elasticai-experiment-framework = { git = "https://github.com/es-ude/elastic-ai.experiment-framework.git" }
+elasticai-experiment-framework = { git = "https://github.com/es-ude/elastic-ai.experiment-framework.git", branch = "main" }
+elasticai-creator = { git = "https://github.com/es-ude/elastic-ai.creator.git", branch = "main" }
