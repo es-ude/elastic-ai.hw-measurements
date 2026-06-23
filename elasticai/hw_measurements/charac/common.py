@@ -1,6 +1,5 @@
 from logging import Logger, getLogger
-from os import makedirs
-from os.path import join
+from pathlib import Path
 from random import randint, random
 
 import numpy as np
@@ -11,7 +10,7 @@ class CharacterizationCommon:
     _logger: Logger
 
     def __init__(self) -> None:
-        """Common class with functions used in all characterisation methods"""
+        """Common class with functions used in all characterization methods"""
         self._logger = getLogger(__name__)
 
     @staticmethod
@@ -53,10 +52,9 @@ class CharacterizationCommon:
     def dummy_get_dut_adc(chnl: int) -> int:
         """Function for bypassing the definition of the ADC output
         :param chnl:    Integer with DAC number
-        :param data:    Integer with DAC data
         :return:        None
         """
-        return randint(a=0, b=(2**16) - 1)
+        return chnl + randint(a=0, b=(2**16) - 1)
 
     @staticmethod
     def dummy_get_daq() -> float:
@@ -72,7 +70,7 @@ class CharacterizationCommon:
         """
         pass
 
-    def save_results(self, file_name: str, settings: object, data: dict, folder_name: str) -> None:
+    def save_results(self, file_name: str, settings: object, data: dict, folder_name: Path) -> None:
         """Function for saving the measured data in numpy format
         :param file_name:   Name of file to save (without extension)
         :param settings:    Class with settings
@@ -80,9 +78,9 @@ class CharacterizationCommon:
         :param folder_name: Name of folder where results will be saved
         :return:            None
         """
-        makedirs(folder_name, exist_ok=True)
-        np.savez_compressed(
-            file=join(folder_name, f"{file_name}.npz"), allow_pickle=True, data=data, settings=settings
-        )
+
+        folder_name.mkdir(parents=True, exist_ok=True)
+        path2save = folder_name / f"{file_name}.npz"
+        np.savez(file=path2save.as_posix(), allow_pickle=True, data=data, settings=settings)
         self._logger.debug(f"Saved results in folder: {folder_name}")
         self._logger.debug(f"Saved measured with {len(data)} entries")

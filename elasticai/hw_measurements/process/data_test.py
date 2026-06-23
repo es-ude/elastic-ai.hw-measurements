@@ -12,8 +12,8 @@ from elasticai.hw_measurements.process.data import (
 class TestDataAnalysis(unittest.TestCase):
     path2data = get_path_to_project(new_folder="test_data")
     hndl = MetricCalculator()
-    ovr = hndl.get_data_overview(path=path2data.as_posix(), acronym="dac")
-    trns = hndl.process_data_from_file(path=path2data.as_posix(), filename=ovr[0])
+    ovr = hndl.get_data_overview(path=path2data, acronym="dac")
+    trns = hndl.process_data_from_file(path=path2data.as_posix(), file_name=ovr[0])
 
     def test_get_data_overview(self):
         self.assertTrue(len(self.ovr) > 0)
@@ -50,6 +50,18 @@ class TestDataAnalysis(unittest.TestCase):
     def test_dnl_constructor_value(self):
         rslt = self.hndl.calculate_dnl(stim_input=self.trns["stim"], daq_output=self.trns["ch00"]["mean"])
         np.testing.assert_array_equal(rslt, np.zeros_like(rslt))
+
+    def test_inl_is_zero_for_perfectly_linear_data_through_origin(self):
+        stim_input = np.arange(0, 10, dtype=float)
+        daq_output = 2.0 * stim_input
+        inl = self.hndl.calculate_inl(stim_input, daq_output)
+        np.testing.assert_allclose(inl, np.zeros_like(stim_input), atol=1e-9)
+
+    def test_inl_is_nonzero_for_linear_data_with_offset(self):
+        stim_input = np.arange(1, 10, dtype=float)
+        daq_output = 2.0 * stim_input + 5.0
+        inl = self.hndl.calculate_inl(stim_input, daq_output)
+        assert not np.allclose(inl, np.zeros_like(stim_input))
 
     def test_metric_mbe_float(self):
         rslt = self.hndl.calculate_error_mbe(

@@ -39,10 +39,10 @@ class DriverNGUX01:
             self.__write_to_dev("SYST:MIX")
             self.__write_to_dev(strftime("SYST:TIME %H,%M,%S"))
             self._last_usb_state = self.is_usb_connected()
-            print(f"Right device is selected with: {self.get_id(False)}")
+            self._logger.debug(f"Right device is selected with: {self.get_id(False)}")
             self.sync()
         else:
-            print("Not right selected device. Please check!")
+            raise ConnectionError("Not right selected device. Please check!")
 
     def __do_check_idn(self) -> None:
         """Checking the IDN"""

@@ -3,7 +3,9 @@ from copy import deepcopy
 
 import numpy as np
 
-from elasticai.hw_measurements.charac.device import CharacterizationDevice, SettingsDevice
+from elasticai.hw_measurements import get_path_to_project
+
+from .device import CharacterizationDevice, SettingsDevice
 
 settings = SettingsDevice(
     system_id="0",
@@ -125,7 +127,11 @@ class TestDevice(unittest.TestCase):
         set0.delta_steps = 0.5
         set0.num_rpt = 2
 
-        hndl = CharacterizationDevice()
+        path2yaml = get_path_to_project("temp_config") / "dev"
+        hndl = CharacterizationDevice(path2yaml=path2yaml)
+        self.assertTrue(path2yaml.exists())
+        self.assertTrue((path2yaml / "Config_TestDevice.yaml").exists())
+
         hndl.settings = set0
         results = hndl.run_test_transfer(
             func_stim=set0.get_cycle_stimuli_input_sawtooth,

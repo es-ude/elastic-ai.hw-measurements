@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger, getLogger
 from os.path import splitext
+from pathlib import Path
 from time import sleep
 
 import numpy as np
@@ -82,12 +83,15 @@ class CharacterizationDAC(CharacterizationCommon):
     _input_val: int
     _logger: Logger
 
-    def __init__(self) -> None:
-        """Class for handling the measurement routine for characterising a Digital-Analog-Converter (DAC)"""
+    def __init__(self, path2yaml: Path = Path("config")) -> None:
+        """Class for handling the measurement routine for characterizing a Digital-Analog-Converter (DAC)
+        :param path2yaml:   Path to yaml config file
+        :return:            None
+        """
         super().__init__()
         self._logger = getLogger(__name__)
         self.settings = YamlConfigHandler(
-            yaml_template=DefaultSettingsDAC, path2yaml="config", yaml_name="Config_TestDAC"
+            yaml_template=DefaultSettingsDAC, path2yaml=path2yaml, yaml_name="Config_TestDAC"
         ).get_class(SettingsDAC)
 
     def run_test_dac_transfer(self, func_mux, func_dac, func_daq, func_beep) -> dict:
@@ -128,7 +132,7 @@ class CharacterizationDAC(CharacterizationCommon):
 
         return results
 
-    def plot_characteristic_results_from_file(self, path: str, file_name: str) -> None:
+    def plot_characteristic_results_from_file(self, path: Path, file_name: str) -> None:
         """Function for plotting the loaded data files
         :param path:        Path to the numpy files with DAQ results
         :param file_name:   Name of numpy array with DAQ results to load
@@ -136,11 +140,11 @@ class CharacterizationDAC(CharacterizationCommon):
         """
         hndl = MetricCalculator()
         self._logger.info("Loading the data file")
-        data = hndl.load_data(path=path, file_name=file_name)["data"]
+        data = hndl.load_data(path=path, file_name=file_name, load_settings=False).data
         self._logger.info("Calculating the metric")
         metric = hndl.process_data_direct(data)
 
-        self.__plot_characteristic(metric=metric, path2save=path, file_name=file_name)
+        self.__plot_characteristic(metric=metric, path2save=path.as_posix(), file_name=file_name)
 
     def plot_characteristic_results_direct(self, data: dict, file_name: str, path: str) -> None:
         """Function for plotting the loaded data files

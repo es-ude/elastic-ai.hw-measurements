@@ -46,3 +46,9 @@ class MetricNoise:
     offset_mead: np.ndarray
     peak_peak: np.ndarray
     sampling_rate: float
+
+
+@dataclass(frozen=True)
+class LoadedData:
+    data: dict
+    settings: dict

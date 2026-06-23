@@ -3,7 +3,9 @@ from copy import deepcopy
 
 import numpy as np
 
-from elasticai.hw_measurements.charac.dac import CharacterizationDAC, SettingsDAC
+from elasticai.hw_measurements import get_path_to_project
+
+from .dac import CharacterizationDAC, SettingsDAC
 
 settings = SettingsDAC(
     system_id="0",
@@ -90,7 +92,11 @@ class TestDAC(unittest.TestCase):
         set0.num_steps = 16
         set0.num_rpt = 2
 
-        hndl = CharacterizationDAC()
+        path2yaml = get_path_to_project("temp_config") / "dac"
+        hndl = CharacterizationDAC(path2yaml=path2yaml)
+        self.assertTrue(path2yaml.exists())
+        self.assertTrue((path2yaml / "Config_TestDAC.yaml").exists())
+
         hndl.settings = set0
         results = hndl.run_test_dac_transfer(
             func_mux=hndl.dummy_set_mux,

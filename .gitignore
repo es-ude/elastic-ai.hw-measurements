@@ -2,6 +2,7 @@
 
 **/docs/apidocs
 **/test_dummy
+**/htmlcov
 **/build*
 **/temp_*
 **/config
@@ -12,7 +13,9 @@
 **/venv
 **/*.log
 **/*.yaml
+*coverage*
 .python-version
+elasticai/__init__.py
 
 ### devenv and yosys+nextpnr+OpenFPGA tools
 **/.devenv

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger, getLogger
 from os.path import splitext
+from pathlib import Path
 from time import sleep
 
 import numpy as np
@@ -93,12 +94,17 @@ class CharacterizationAmplifier(CharacterizationCommon):
     _input_val: float
     _logger: Logger
 
-    def __init__(self) -> None:
-        """Class for handling the measurement routine for characterising an analog amplifier"""
+    def __init__(self, path2yaml: Path = Path("config")) -> None:
+        """Class for handling the measurement routine for characterizing an analog amplifier
+        :param path2yaml:   Path to yaml config file
+        :return:            None
+        """
         super().__init__()
         self._logger = getLogger(__name__)
         self.settings = YamlConfigHandler(
-            yaml_template=DefaultSettingsAmplifier, path2yaml="config", yaml_name="Config_TestAmplifier"
+            yaml_template=DefaultSettingsAmplifier,
+            path2yaml=path2yaml,
+            yaml_name="Config_TestAmplifier",
         ).get_class(SettingsAmplifier)
 
     def run_test_transfer(
@@ -151,20 +157,19 @@ class CharacterizationAmplifier(CharacterizationCommon):
         """
         self.__plot_characteristic(data=data, path2save=path, file_name=file_name)
 
-    def plot_characteristic_results_from_file(self, file_name: str, path: str) -> None:
+    def plot_characteristic_results_from_file(self, file_name: str, path: Path) -> None:
         """Function for plotting the loaded data files
         :param path:        Path to measurement in which the figures are saved
         :param file_name:   Name of figure file to save
         :return:            None
         """
         self._logger.info("Loading the data file")
-        data = MetricCalculator().load_data(path=path, file_name=file_name)["data"]
+        data = MetricCalculator().load_data(path=path, file_name=file_name, load_settings=False).data
         self._logger.info("Calculating the metric")
 
-        self.__plot_characteristic(data=data, path2save=path, file_name=file_name)
+        self.__plot_characteristic(data=data, path2save=path.as_posix(), file_name=file_name)
 
     def __plot_characteristic(self, data: dict, path2save: str, file_name: str) -> None:
-        """"""
         hndl = MetricCalculator()
         metric = hndl.process_data_direct(data)
         self._logger.info("Calculating the metric")

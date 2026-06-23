@@ -1,6 +1,5 @@
 import unittest
 from dataclasses import dataclass
-from os.path import exists, join
 
 from elasticai.hw_measurements import get_path_to_project
 from elasticai.hw_measurements._helper.yaml import YamlConfigHandler
@@ -20,7 +19,7 @@ DefaultSettingsTest = SettingsTest(
 )
 
 # --- DATA FOR TESTING
-path2yaml = join(get_path_to_project(), join("temp_test", "config"))
+path2yaml = get_path_to_project() / "temp_test" / "config"
 filename = "Config_Test"
 data_wr = {
     "Name": "John Doe",
@@ -44,8 +43,9 @@ class TestYamlHandler(unittest.TestCase):
 
     def test_yaml_create(self):
         self.dummy0.write_dict_to_yaml(data_wr)
-        path2chck = join(path2yaml, f"{filename}0.yaml")
-        self.assertTrue(exists(path2chck))
+        path2chck = path2yaml / f"{filename}0.yaml"
+        self.assertTrue(path2chck.exists())
+        self.assertTrue(path2chck.is_file())
 
     def test_yaml_class(self):
         class_out = self.dummy1.get_class(SettingsTest)

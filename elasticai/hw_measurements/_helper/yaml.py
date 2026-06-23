@@ -17,14 +17,18 @@ class YamlConfigHandler:
         """Getting the path to the desired YAML file"""
         return self.__path2yaml_folder / f"{self.__yaml_name}.yaml"
 
-    def __init__(self, yaml_template: Any | dict, path2yaml="config", yaml_name="Config_Train"):
+    def __init__(
+        self, yaml_template: Any | dict, path2yaml: Path = Path("config"), yaml_name: str = "Config_Train"
+    ):
         """Creating a class for handling YAML files
         Args:
             yaml_template:      Dummy dataclass with entries or dictionary (is only generated if YAML not exist)
             path2yaml:          String with path to the folder which has the YAML file [Default: '']
             yaml_name:          String with name of the YAML file [Default: 'Config_Train']
         """
-        self.__path2yaml_folder = get_path_to_project() / path2yaml
+        self.__path2yaml_folder = (
+            get_path_to_project() / path2yaml if not path2yaml.is_absolute() else path2yaml
+        )
         self.__yaml_name = self.__remove_ending_from_filename(yaml_name)
         self._template = yaml_template
 
@@ -82,20 +86,16 @@ class YamlConfigHandler:
         else:
             return template_used.keys() == real_used.keys()
 
-    def write_dict_to_yaml(self, config_data: dict, print_output: bool = False) -> None:
+    def write_dict_to_yaml(self, config_data: dict) -> None:
         """Writing list with configuration sets to YAML file
         Args:
             config_data:    Dict. with configuration
-            print_output:   Printing the data in YAML format
         Returns:
             None
         """
         self.__path2yaml_folder.mkdir(parents=True, exist_ok=True)
         with open(self.path2chck, "w") as f:
             yaml.dump(config_data, f, sort_keys=False)
-
-        if print_output:
-            print(yaml.dump(config_data, sort_keys=False))
 
     def get_class(self, class_constructor: type):
         """Getting all key inputs from yaml dictionary to a class"""

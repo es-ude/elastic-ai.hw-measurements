@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger, getLogger
 from os.path import splitext
+from pathlib import Path
 from time import sleep
 
 import numpy as np
@@ -97,12 +98,15 @@ class CharacterizationADC(CharacterizationCommon):
     _logger: Logger
     _input_val: float
 
-    def __init__(self) -> None:
-        """Class for handling the measurement routine for characterising an Analog-Digital-Converter (ADC)"""
+    def __init__(self, path2yaml: Path = Path("config")) -> None:
+        """Class for handling the measurement routine for characterizing an Analog-Digital-Converter (ADC)
+        :param path2yaml:   Path to yaml config file
+        :return:            None
+        """
         super().__init__()
         self._logger = getLogger(__name__)
         self.settings = YamlConfigHandler(
-            yaml_template=DefaultSettingsADC, path2yaml="config", yaml_name="Config_TestADC"
+            yaml_template=DefaultSettingsADC, path2yaml=path2yaml, yaml_name="Config_TestADC"
         ).get_class(SettingsADC)
 
     def run_test_transfer(self, func_mux, func_daq, func_sens, func_dut, func_beep) -> dict:
@@ -146,17 +150,17 @@ class CharacterizationADC(CharacterizationCommon):
 
         return results
 
-    def plot_characteristic_results_from_file(self, path: str, file_name: str) -> None:
+    def plot_characteristic_results_from_file(self, path: Path, file_name: str) -> None:
         """Function for plotting the loaded data files
         :param path:        Path to the numpy files with DAQ results
         :param file_name:   Name of numpy array with DAQ results to load
         :return:            None
         """
         self._logger.info("Loading the data file")
-        data = MetricCalculator().load_data(path=path, file_name=file_name)["data"]
+        data = MetricCalculator().load_data(path=path, file_name=file_name, load_settings=False).data
         self._logger.info("Calculating the metric")
 
-        self.__plot_characteristic(data=data, path2save=path, file_name=file_name)
+        self.__plot_characteristic(data=data, path2save=path.as_posix(), file_name=file_name)
 
     def plot_characteristic_results_direct(self, data: dict, file_name: str, path: str) -> None:
         """Function for plotting the loaded data files

@@ -25,6 +25,7 @@ def scan_instruments(driver=None) -> list:
 
     if not len(obj_inst):
         raise ConnectionError("No instruments found!")
+
     logger.debug("Available devices")
     logger.debug("--------------------------------------")
     for idx, inst_name in enumerate(obj_inst):

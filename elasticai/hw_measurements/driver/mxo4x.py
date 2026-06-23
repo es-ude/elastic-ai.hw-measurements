@@ -112,13 +112,10 @@ class DriverMXO4X:
             if do_reset:
                 self.do_reset()
             self._trig_seq = self.__read_from_dev("TRIG:MEV:MODE?") == "SEQ"
-            # This command doesn't seem to exist? Windows doesn't throw exceptions on wrong commands,
-            # that's why it worked there, but not on Linux
-            # self.__write_to_dev("SYST:MIX")   # Instrument error detected: -113,"Undefined header;SYST:MIX"
-            print(f"Right device is selected with: {self.get_id(False)}")
+            self._logger.debug(f"Right device is selected with: {self.get_id(False)}")
             self.sync_device_time()
         else:
-            print("Not right selected device. Please check!")
+            raise ConnectionError("Not right selected device. Please check!")
 
     def __do_check_idn(self) -> None:
         """Checking the IDN"""

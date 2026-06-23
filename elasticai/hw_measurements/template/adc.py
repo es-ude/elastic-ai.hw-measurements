@@ -1,6 +1,5 @@
-from glob import glob
 from logging import Logger, getLogger
-from os.path import basename, dirname, join
+from pathlib import Path
 from time import sleep
 
 # PYTHON API OF THE DUT HAVE TO BE INCLUDED
@@ -18,7 +17,7 @@ class TestHandlerADC:
     _logger: Logger = getLogger(__name__)
     _en_debug: bool = False
     _file_name: str
-    _folder_name: str
+    _folder_name: Path
     _search_index: str = "adc"
 
     def __init__(
@@ -40,7 +39,7 @@ class TestHandlerADC:
         self._file_name = (
             f"{self._hndl_test.settings.get_date_string()}_{self._search_index}_charac_id-{system_id:03d}"
         )
-        self._folder_name = join(get_path_to_project(), "runs")
+        self._folder_name = get_path_to_project() / "runs"
 
         if not only_plot:
             self._hndl_dut = DriverDUT(port=com_dut, timeout=1.0)
@@ -51,8 +50,8 @@ class TestHandlerADC:
             self._hndl_daq.do_beep()
 
     def get_overview_folder(self) -> list:
-        """Function to get an overview of available numpyz files"""
-        return glob(join(self._folder_name, "*.npz"))
+        """Function to get an overview of available numpy files"""
+        return list(self._folder_name.glob("*.npz"))
 
     def run_transfer_test(self) -> dict:
         """Function for running the ADC test on DUT device
@@ -87,14 +86,14 @@ class TestHandlerADC:
             data=results, file_name=self._file_name, path=self._folder_name
         )
 
-    def plot_results_from_file(self, path2file: str) -> None:
+    def plot_results_from_file(self, path2file: Path) -> None:
         """Function for plotting the ADC test results
         :param path2file:   String with path to file
         :return:            None
         """
         if self._search_index in path2file:
             self._hndl_test.plot_characteristic_results_from_file(
-                path=dirname(path2file), file_name=basename(path2file)
+                path=path2file.parent.as_posix(), file_name=path2file.name
             )
 
 

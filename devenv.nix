@@ -212,7 +212,7 @@ in {
     };
     "test:coverage" = {
       exec = ''
-        ${uv_run} coverage run -m pytest 'not hardware' --reruns 3
+        ${uv_run} coverage run -m pytest -m 'not hardware' --reruns 3
       '';
     };
     "check:coverage-report" = {

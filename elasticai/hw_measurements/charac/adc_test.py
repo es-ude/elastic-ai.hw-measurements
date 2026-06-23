@@ -3,7 +3,9 @@ from copy import deepcopy
 
 import numpy as np
 
-from elasticai.hw_measurements.charac.adc import CharacterizationADC, SettingsADC
+from elasticai.hw_measurements import get_path_to_project
+
+from .adc import CharacterizationADC, SettingsADC
 
 settings = SettingsADC(
     system_id="0",
@@ -77,7 +79,11 @@ class TestADC(unittest.TestCase):
         set0.delta_steps = 0.5
         set0.num_rpt = 2
 
-        hndl = CharacterizationADC()
+        path2yaml = get_path_to_project("temp_config") / "adc"
+        hndl = CharacterizationADC(path2yaml=path2yaml)
+        self.assertTrue(path2yaml.exists())
+        self.assertTrue((path2yaml / "Config_TestADC.yaml").exists())
+
         hndl.settings = set0
         results = hndl.run_test_transfer(
             func_mux=hndl.dummy_set_mux,

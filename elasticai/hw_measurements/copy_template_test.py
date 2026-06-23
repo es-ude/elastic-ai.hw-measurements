@@ -9,7 +9,7 @@ from .copy_template import copy_characterization_template
 
 @pytest.fixture(scope="session", autouse=True)
 def path():
-    path = get_path_to_project("build_files")
+    path = get_path_to_project("temp_files")
     yield path
 
 
