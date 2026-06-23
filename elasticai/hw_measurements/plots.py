@@ -12,7 +12,7 @@ from elasticai.hw_measurements import (
     TransientData,
     TransientNoiseSpectrum,
 )
-from elasticai.hw_measurements.process.data import calculate_total_harmonics_distortion, do_fft
+from elasticai.hw_measurements.process.data import MetricCalculator, do_fft
 
 
 def get_plot_color(idx: int) -> str:
@@ -48,7 +48,7 @@ def save_figure(fig, path: str | Path, name: str, formats: list = ("pdf", "svg")
         fig.savefig(f"{path2fig}.{form}", format=form)
 
 
-def scale_auto_value(data: np.ndarray | float) -> [float, str]:
+def scale_auto_value(data: np.ndarray | float) -> tuple[float, str]:
     """Getting the scaling value and corresponding string notation for unit scaling in plots
     Args:
         data:   Array or value for calculating the SI scaling value
@@ -178,7 +178,7 @@ def plot_transfer_function_metric(
 
 def plot_spectrum_harmonic(
     data: TransformSpectrum,
-    N_harmonics: int = 6,
+    num_harmonics: int = 6,
     file_name: str = "",
     path2save: str = "",
     delta_peaks: int = 20,
@@ -189,7 +189,7 @@ def plot_spectrum_harmonic(
 ) -> None:
     """Plotting the spectrum for analysing the total harmonic distortion
     :param data:        Dataclass TransformSpectrum with spectral data from measurement
-    :param N_harmonics: Number of harmonics for calculation and plot
+    :param num_harmonics: Number of harmonics for calculation and plot
     :param file_name:   File name of the saved figure
     :param path2save:   Path for saving the figure
     :param delta_peaks: Number of positions around the peaks
@@ -202,13 +202,12 @@ def plot_spectrum_harmonic(
     legend_text = ["Signal", "Stimulus", "Harmonics"]
     scale_x, unit_x = scale_auto_value(data.freq)
 
-    # --- Plotten
     plt.figure()
     plt.loglog(scale_x * data.freq, data.spec, color="k", label=legend_text[0])
     if show_peaks:
         f_zero = data.freq[data.spec[delta_peaks:].argmax() + delta_peaks]
         xharm = [
-            np.argwhere(data.freq >= f_zero * (1 + ite)).flatten()[0] for ite in range(1 + N_harmonics)
+            np.argwhere(data.freq >= f_zero * (1 + ite)).flatten()[0] for ite in range(1 + num_harmonics)
         ]
         for idx, xpos in enumerate(xharm):
             xval = np.linspace(
@@ -240,7 +239,9 @@ def plot_spectrum_harmonic(
         spec=data.spec[delta_peaks:] if not is_input_db else 10 ** (data.spec[delta_peaks:] / 20),
         sampling_rate=data.sampling_rate,
     )
-    thd = calculate_total_harmonics_distortion(data=new_data, N_harmonics=N_harmonics)
+    thd = MetricCalculator().calculate_total_harmonics_distortion_from(
+        signal=new_data.spec, fs=new_data.sampling_rate, num_harmonics=num_harmonics
+    )
     if show_metric:
         plt.title(f"THD = {thd:.2f} dB", fontsize=get_font_size())
     else:
@@ -328,7 +329,7 @@ def plot_transient_data(
         spec: TransformSpectrum = do_fft(y=data_ch, fs=data.sampling_rate, method_window="Hamming")
         plot_spectrum_harmonic(
             data=spec,
-            N_harmonics=10,
+            num_harmonics=10,
             file_name=file_name,
             path2save=path2save,
             show_plot=False,

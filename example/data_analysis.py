@@ -77,7 +77,7 @@ def analyse_harmonic_dut(path: Path, subfolder_name: str, take_channel: int, sho
         )
         plot_spectrum_harmonic(
             data=data_spec,
-            N_harmonics=8,
+            num_harmonics=8,
             path2save=str(file_sel.parent),
             file_name=file_sel.stem,
             is_input_db=False,

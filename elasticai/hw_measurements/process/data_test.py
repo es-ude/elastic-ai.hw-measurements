@@ -5,8 +5,6 @@ import numpy as np
 from elasticai.hw_measurements import get_path_to_project
 from elasticai.hw_measurements.process.data import (
     MetricCalculator,
-    calculate_total_harmonics_distortion,
-    calculate_total_harmonics_distortion_from_transient,
     do_fft,
 )
 
@@ -14,8 +12,8 @@ from elasticai.hw_measurements.process.data import (
 class TestDataAnalysis(unittest.TestCase):
     path2data = get_path_to_project(new_folder="test_data")
     hndl = MetricCalculator()
-    ovr = hndl.get_data_overview(path=path2data, acronym="dac")
-    trns = hndl.process_data_from_file(path=path2data, filename=ovr[0])
+    ovr = hndl.get_data_overview(path=path2data.as_posix(), acronym="dac")
+    trns = hndl.process_data_from_file(path=path2data.as_posix(), filename=ovr[0])
 
     def test_get_data_overview(self):
         self.assertTrue(len(self.ovr) > 0)
@@ -119,31 +117,31 @@ class TestDataAnalysis(unittest.TestCase):
 
     def test_metric_thd_one_harmonic(self):
         sampling_rate = 1000
-        t = np.linspace(0, 1, sampling_rate, endpoint=True)
+        t = np.linspace(start=0, stop=1, num=int(sampling_rate), endpoint=True)
         signal = (
             np.sin(2 * np.pi * 50 * t)
             + 0.1 * np.sin(2 * np.pi * 100 * t)
             + 0.05 * np.sin(2 * np.pi * 150 * t)
         )
 
-        rslt = self.hndl.calculate_total_harmonics_distortion(
-            signal=signal, fs=sampling_rate, N_harmonics=1
+        rslt = self.hndl.calculate_total_harmonics_distortion_from_transient(
+            signal=signal, fs=sampling_rate, num_harmonics=1
         )
-        self.assertEqual(rslt, -20.067970271376048)
+        self.assertEqual(rslt, -20.21920586821124)
 
     def test_metric_thd_two_harmonic(self):
-        sampling_rate = 1000
-        t = np.linspace(0, 1, sampling_rate, endpoint=True)
+        sampling_rate = 1000.0
+        t = np.linspace(start=0, stop=1.0, num=int(sampling_rate), endpoint=True)
         signal = (
             np.sin(2 * np.pi * 50 * t)
             + 0.1 * np.sin(2 * np.pi * 100 * t)
             + 0.05 * np.sin(2 * np.pi * 150 * t)
         )
 
-        rslt = self.hndl.calculate_total_harmonics_distortion(
-            signal=signal, fs=sampling_rate, N_harmonics=2
+        rslt = self.hndl.calculate_total_harmonics_distortion_from_transient(
+            signal=signal, fs=sampling_rate, num_harmonics=2
         )
-        self.assertAlmostEqual(rslt, -19.118108722018935, delta=1e-6)
+        self.assertAlmostEqual(rslt, -19.300251257175265, delta=1e-6)
 
     def test_calculate_cosine_match(self):
         t = np.linspace(0, 1, 1000, endpoint=True)
@@ -161,23 +159,9 @@ class TestDataAnalysis(unittest.TestCase):
         )
         self.assertAlmostEqual(rslt, -4.439780764141639e-17, delta=1e-18)
 
-    def test_metric_thd_one_harmonic_tran(self):
-        sampling_rate = 1000
-        t = np.linspace(0, 1, sampling_rate, endpoint=True)
-        signal = (
-            np.sin(2 * np.pi * 50 * t)
-            + 0.1 * np.sin(2 * np.pi * 100 * t)
-            + 0.05 * np.sin(2 * np.pi * 150 * t)
-        )
-
-        rslt = calculate_total_harmonics_distortion_from_transient(
-            signal=signal, fs=sampling_rate, N_harmonics=1
-        )
-        self.assertEqual(rslt, -20.21920586821124)
-
     def test_metric_thd_one_harmonic_spec(self):
-        sampling_rate = 1000
-        t = np.linspace(0, 1, sampling_rate, endpoint=True)
+        sampling_rate = 1000.0
+        t = np.linspace(start=0.0, stop=1.0, num=int(sampling_rate), endpoint=True)
         signal = (
             np.sin(2 * np.pi * 50 * t)
             + 0.1 * np.sin(2 * np.pi * 100 * t)
@@ -188,9 +172,5 @@ class TestDataAnalysis(unittest.TestCase):
             y=signal,
             fs=sampling_rate,
         )
-        rslt = calculate_total_harmonics_distortion(data=spectrum, N_harmonics=2)
+        rslt = self.hndl.calculate_total_harmonics_distortion_from_spec(signal=spectrum, num_harmonics=2)
         self.assertEqual(rslt, -19.300251257175265)
-
-
-if __name__ == "__main__":
-    unittest.main()
