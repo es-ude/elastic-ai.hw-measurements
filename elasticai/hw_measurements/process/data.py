@@ -21,6 +21,8 @@ def window_method(window_size: int, method: str = "hamming") -> np.ndarray:
         "bartlett": np.bartlett(window_size),
         "blackman": np.blackman(window_size),
     }
+    if method not in list(methods_avai.keys()):
+        raise ValueError(f"Method {method} is not available")
 
     window = np.ones(window_size)
     for key in methods_avai.keys():
@@ -52,43 +54,6 @@ def do_fft(y: np.ndarray, fs: float, method_window: str = "") -> TransformSpectr
     return TransformSpectrum(freq=freq, spec=fft_out, sampling_rate=fs)
 
 
-def calculate_total_harmonics_distortion(data: TransformSpectrum, N_harmonics: int = 4) -> float:
-    """Calculating the Total Harmonics Distortion (THD) of spectral input
-    :param data:        Dataclass TransformSpectrum
-    :param N_harmonics: Number of used harmonics for calculating THD
-    Return:
-          THD value (in dB) and corresponding frequency positions of peaks
-    """
-    fsine = data.freq[np.argmax(data.spec).flatten()[0]]
-    # --- Limiting the search space
-    pos_x0 = np.argwhere(data.freq >= 0.5 * fsine).flatten()[0]
-    pos_x1 = np.argwhere(data.freq >= (N_harmonics + 1.5) * fsine).flatten()[0]
-    search_y = data.spec[pos_x0:pos_x1]
-
-    # --- Getting peaks values
-    df = np.mean(np.diff(data.freq))
-    xpos, _ = find_peaks(search_y, distance=int(0.8 * fsine / df))
-    peaks_y = search_y[xpos]
-
-    # --- Return THD
-    return float(20 * np.log10(np.sqrt(np.sum(np.power(peaks_y[1:], 2))) / peaks_y[0]))
-
-
-def calculate_total_harmonics_distortion_from_transient(
-    signal: np.ndarray, fs: float, N_harmonics: int = 4
-) -> float:
-    """Calculating the Total Harmonics Distortion (THD) from transient input
-    Args:
-        signal:         Array with frequency values for spectral analysis
-        fs:             Sampling rate [Hz]
-        N_harmonics:    Number of used harmonics for calculating THD
-    Return:
-          THD value (in dB)
-    """
-    spectrum = do_fft(y=signal, fs=fs)
-    return calculate_total_harmonics_distortion(data=spectrum, N_harmonics=N_harmonics)
-
-
 class MetricCalculator(ProcessCommon):
     _logger: Logger = getLogger(__name__)
 
@@ -108,14 +73,14 @@ class MetricCalculator(ProcessCommon):
     def calculate_gain_from_transfer(stim_input: np.ndarray, src_output: np.ndarray) -> np.ndarray:
         """Function for extracting the gain of an electrical circuit using the transfer function test
         :param stim_input:  Numpy array with stimulus input
-        :param daq_output:  Numpy array with DAQ output (should have same unit like stim_input)
+        :param src_output:  Numpy array with DAQ output (should have same unit like stim_input)
         :return:            Numpy array with gain value
         """
         assert src_output.shape == stim_input.shape, "Dimension / shape mismatch"
         return np.diff(src_output) / np.diff(stim_input)
 
     @staticmethod
-    def calculate_lsb(stim_input: np.ndarray, daq_output: np.ndarray) -> np.array:
+    def calculate_lsb(stim_input: np.ndarray, daq_output: np.ndarray) -> np.ndarray:
         """Function for calculating the mean Least Significant Bit (LSB)
         :param stim_input:  Numpy array with stimulus input
         :param daq_output:  Numpy array with DAQ output
@@ -144,9 +109,9 @@ class MetricCalculator(ProcessCommon):
         return daq_output - self.calculate_lsb_mean(stim_input, daq_output) * stim_input
 
     @staticmethod
-    def calculate_error_mbe(y_pred: np.ndarray | float, y_true: np.ndarray | float) -> float:
+    def calculate_error_mbe(y_pred: float | np.ndarray, y_true: float | np.ndarray) -> float:
         """Calculating the distance-based metric with mean bias error
-        :parm y_pred:       Numpy array or float value from prediction
+        :param y_pred:      Numpy array or float value from prediction
         :param y_true:      Numpy array or float value from true label
         :return:            Float value with error
         """
@@ -196,28 +161,40 @@ class MetricCalculator(ProcessCommon):
             return float(abs(y_true - y_pred) / abs(y_true))
 
     @staticmethod
-    def calculate_total_harmonics_distortion(signal: np.ndarray, fs: float, N_harmonics: int) -> float:
-        """Calculating the Total Harmonics Distortion (THD) of transient input
-        :param signal:      Numpy array with transient signal to extract spectral analysis
-        :param fs:          Applied sampling rate [Hz]
-        :param N_harmonics: Number of used harmonics for calculating THD
-        :return:            THD value (in dB)
+    def calculate_total_harmonics_distortion_from_spec(
+        signal: TransformSpectrum, num_harmonics: int
+    ) -> float:
+        """Calculating the Total Harmonics Distortion (THD) of spectral input
+        :param signal:          Dataclass TransformSpectrum with data
+        :param num_harmonics:   Number of used harmonics for calculating THD
+        :return:                THD value (in dB)
         """
-        # --- calculate spectral input
-        spectral: TransformSpectrum = do_fft(y=signal, fs=fs, method_window="hamming")
-
         # --- Limiting the search space
-        fsine = float(spectral.freq[np.argmax(spectral.spec).flatten()][0])
-        pos_x0 = np.argwhere(spectral.freq >= 0.5 * fsine).flatten()[0]
-        pos_x1 = np.argwhere(spectral.freq >= (N_harmonics + 1.5) * fsine).flatten()[0]
-        search_y = spectral.spec[pos_x0:pos_x1]
+        fsine = float(signal.freq[np.argmax(signal.spec).flatten()][0])
+        pos_x0 = np.argwhere(signal.freq >= 0.5 * fsine).flatten()[0]
+        pos_x1 = np.argwhere(signal.freq >= (num_harmonics + 1.5) * fsine).flatten()[0]
+        search_y = signal.spec[pos_x0:pos_x1]
 
         # --- Getting peaks values
-        df = np.mean(np.diff(spectral.freq))
+        df = np.mean(np.diff(signal.freq))
         xpos, _ = find_peaks(search_y, distance=int(0.8 * fsine / df))
         peaks_y = search_y[xpos]
 
         return 20 * np.log10(np.sqrt(np.sum(np.power(peaks_y[1:], 2))) / peaks_y[0])
+
+    def calculate_total_harmonics_distortion_from_transient(
+        self, signal: np.ndarray, fs: float, num_harmonics: int = 4
+    ) -> float:
+        """Calculating the Total Harmonics Distortion (THD) from transient input
+        :param signal:          Array with frequency values for spectral analysis
+        :param fs:              Sampling rate [Hz]
+        :param num_harmonics:   Number of used harmonics for calculating THD
+        :return:                THD value (in dB)
+        """
+        spectrum: TransformSpectrum = do_fft(y=signal, fs=fs)
+        return self.calculate_total_harmonics_distortion_from_spec(
+            signal=spectrum, num_harmonics=num_harmonics
+        )
 
     @staticmethod
     def calculate_cosine_similarity(y_pred: np.ndarray, y_true: np.ndarray) -> float:

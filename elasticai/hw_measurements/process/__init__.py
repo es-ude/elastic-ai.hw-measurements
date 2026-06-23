@@ -3,12 +3,6 @@ from .data import (
     MetricCalculator as MetricCalculator,
 )
 from .data import (
-    calculate_total_harmonics_distortion as calculate_total_harmonics_distortion,
-)
-from .data import (
-    calculate_total_harmonics_distortion_from_transient as calculate_total_harmonics_distortion_from_transient,
-)
-from .data import (
     do_fft as do_fft,
 )
 from .mxo4x import (

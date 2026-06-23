@@ -155,8 +155,8 @@ line-ending = "auto"
 [tool.ty.src]
 include = ["elasticai"]
 exclude = [
-  "elasticai/**/*_test.py",
   "elasticai/**/*_tb.py",
+  "elasticai/**/*_test.py",
   "elasticai/hw_measurements/template/*.py",
   "elasticai/hw_measurements/driver/*.py",
   "elasticai/hw_measurements/process/data.py",
