@@ -3,7 +3,9 @@ from copy import deepcopy
 
 import numpy as np
 
-from elasticai.hw_measurements.charac.amp import CharacterizationAmplifier, SettingsAmplifier
+from elasticai.hw_measurements import get_path_to_project
+
+from .amp import CharacterizationAmplifier, SettingsAmplifier
 
 settings = SettingsAmplifier(
     system_id="0",
@@ -75,7 +77,11 @@ class TestAmplifier(unittest.TestCase):
         set0.delta_steps = 0.5
         set0.num_rpt = 2
 
-        hndl = CharacterizationAmplifier()
+        path2yaml = get_path_to_project("temp_config") / "amp"
+        hndl = CharacterizationAmplifier(path2yaml=path2yaml)
+        self.assertTrue(path2yaml.exists())
+        self.assertTrue((path2yaml / "Config_TestAmplifier.yaml").exists())
+
         hndl.settings = set0
         results = hndl.run_test_transfer(
             chnl=0,

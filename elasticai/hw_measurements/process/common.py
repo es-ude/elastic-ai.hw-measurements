@@ -1,8 +1,9 @@
 from logging import getLogger
-from os import listdir
-from os.path import exists, join
+from pathlib import Path
 
 import numpy as np
+
+from elasticai.hw_measurements.data_types import LoadedData
 
 
 class ProcessCommon:
@@ -11,24 +12,30 @@ class ProcessCommon:
         self._logger = getLogger(__name__)
 
     @staticmethod
-    def get_data_overview(path: str, acronym: str) -> list:
+    def get_data_overview(path: Path, acronym: str) -> list:
         """Function for getting an overview of available data files"""
-        return [file for file in listdir(path) if acronym in file]
+        return [file for file in path.iterdir() if acronym in file.as_posix()]
 
-    def load_data(self, path: str, file_name: str, load_settings: bool = False) -> dict:
+    def load_data(self, path: Path, file_name: str, load_settings: bool = False) -> LoadedData:
         """Function for loading the measurement data
         :param path:            Path to measurement in which the files are inside
         :param file_name:       Name of numpy file with measurement results
         :param load_settings:   If True, load settings will be loaded from file
         :return:            Dictionary
         """
-        path2file = join(path, file_name)
+        path2file = path / file_name
         self._logger.debug(f"Loading data from: {path2file}")
-        assert exists(path2file), f"File {path2file} does not exist"
-        loaded = np.load(file=path2file, allow_pickle=True, mmap_mode="r")
+        if not path2file.exists():
+            raise FileNotFoundError(f"File {path2file} does not exist")
+
+        loaded = np.load(file=path2file.as_posix(), allow_pickle=True, mmap_mode="r")
         data = loaded["data"].flatten()[0]
         set = loaded["settings"].flatten()[0] if load_settings else dict()
-        return {"data": data, "settings": set}
+
+        return LoadedData(
+            data=data,
+            settings=set,
+        )
 
     @staticmethod
     def process_data_direct(data: dict) -> dict:
@@ -52,11 +59,12 @@ class ProcessCommon:
         assert len(data) == len(keys_test), "not all data are processed"
         return rslt
 
-    def process_data_from_file(self, path: str, filename: str) -> dict:
+    def process_data_from_file(self, path: Path, file_name: str, load_settings: bool = False) -> dict:
         """Function for processing the measurement data from loading a file
-        :param path:        Path to measurement in which the files are inside
-        :param filename:    Name of numpy file with measurement results
-        :return:            Dictionary with ['stim': stimulation input array, 'ch<x>': results with 'mean' and 'std']
+        :param path:            Path to measurement in which the files are inside
+        :param file_name:       Name of numpy file with measurement results
+        :param load_settings:   If True, load settings will be loaded from file
+        :return:                Dictionary with ['stim': stimulation input array, 'ch<x>': results with 'mean' and 'std']
         """
-        data = self.load_data(path=path, file_name=filename)["data"]
-        return self.process_data_direct(data=data)
+        data = self.load_data(path=path, file_name=file_name, load_settings=load_settings)
+        return self.process_data_direct(data=data.data)

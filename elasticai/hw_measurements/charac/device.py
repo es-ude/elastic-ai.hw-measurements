@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from logging import Logger, getLogger
+from pathlib import Path
 from time import sleep
 
 import numpy as np
@@ -110,12 +111,12 @@ class CharacterizationDevice(CharacterizationCommon):
     _input_val: float
     _logger: Logger
 
-    def __init__(self) -> None:
-        """Class for handling the measurement routine for characterising an electrical device"""
+    def __init__(self, path2yaml: Path = Path("config")) -> None:
+        """Class for handling the measurement routine for characterizing an electrical device"""
         super().__init__()
         self._logger = getLogger(__name__)
         self.settings = YamlConfigHandler(
-            yaml_template=DefaultSettingsDevice, path2yaml="config", yaml_name="Config_TestDevice"
+            yaml_template=DefaultSettingsDevice, path2yaml=path2yaml, yaml_name="Config_TestDevice"
         ).get_class(SettingsDevice)
 
     def run_test_transfer(self, func_stim, func_daq, func_sens, func_resp, func_beep) -> dict:

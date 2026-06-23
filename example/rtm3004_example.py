@@ -1,5 +1,5 @@
 from elasticai.hw_measurements.driver import DriverRTM3004
-from elasticai.hw_measurements import KHz
+from elasticai.hw_measurements.units import KHz
 from time import sleep
 
 

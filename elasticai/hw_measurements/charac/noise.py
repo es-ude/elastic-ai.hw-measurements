@@ -17,7 +17,7 @@ class CharacterizationNoise:
     _metric: MetricNoise
 
     def __init__(self) -> None:
-        """Class for analysing transient measurement to extract noise properties"""
+        """Class for analyzing transient measurement to extract noise properties"""
         self._logger = getLogger(__name__)
 
     @property

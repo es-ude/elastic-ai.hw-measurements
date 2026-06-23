@@ -1,6 +1,5 @@
-from glob import glob
 from logging import Logger, getLogger
-from os.path import basename, dirname, join
+from pathlib import Path
 from time import sleep
 
 from elasticai.hw_measurements import DriverPort, DriverPortIES, get_path_to_project, init_project_folder
@@ -15,7 +14,7 @@ class TestHandlerAmplifier:
     _logger: Logger = getLogger(__name__)
     _en_debug: bool = False
     _file_name: str
-    _folder_name: str
+    _folder_name: Path
     _search_index: str = "amp"
 
     def __init__(
@@ -32,7 +31,7 @@ class TestHandlerAmplifier:
         self._file_name = (
             f"{self._hndl_test.settings.get_date_string()}_{self._search_index}_charac_id-{system_id:03d}"
         )
-        self._folder_name = join(get_path_to_project(), "runs")
+        self._folder_name = get_path_to_project() / "runs"
 
         self._en_debug = en_debug
         if not self._en_debug and not only_plot:
@@ -46,8 +45,8 @@ class TestHandlerAmplifier:
             self._hndl_daq.do_beep()
 
     def get_overview_folder(self) -> list:
-        """Function to get an overview of available numpyz files"""
-        return glob(join(self._folder_name, "*.npz"))
+        """Function to get an overview of available numpy files"""
+        return list(self._folder_name.glob("*.npz"))
 
     def run_transfer_test(self, chnnl_num: int) -> dict:
         """Function for running the ADC test on DUT device
@@ -82,17 +81,17 @@ class TestHandlerAmplifier:
         :return:            None
         """
         self._hndl_test.plot_characteristic_results_direct(
-            data=results, file_name=self._file_name, path=self._folder_name
+            data=results, file_name=self._file_name, path=self._folder_name.as_posix()
         )
 
-    def plot_results_from_file(self, path2file: str) -> None:
+    def plot_results_from_file(self, path2file: Path) -> None:
         """Function for plotting the ADC test results
         :param path2file:   String with path to file
         :return:            None
         """
         if self._search_index in path2file:
             self._hndl_test.plot_characteristic_results_from_file(
-                path=dirname(path2file), file_name=basename(path2file)
+                path=path2file.parent, file_name=path2file.name
             )
 
 

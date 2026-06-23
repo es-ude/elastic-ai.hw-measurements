@@ -56,9 +56,9 @@ class DriverHMP40X0:
             if do_reset:
                 self.do_reset()
             self.__write_to_dev("SYST:MIX")
-            print(f"Right device is selected with: {self.get_id(False)}")
+            self._logger.debug(f"Right device is selected with: {self.get_id(False)}")
         else:
-            print("Not right selected device. Please check!")
+            raise ConnectionError("Not right selected device. Please check!")
 
     def __do_check_idn(self) -> None:
         """Checking the IDN"""

@@ -48,7 +48,7 @@ class DriverDMM6500:
                 self.do_beep()
             self._logger.debug(f"Right device is selected with: {self.get_id()}")
         else:
-            self._logger.debug("Not right selected device. Please check!")
+            raise ConnectionError("Not right selected device. Please check!")
 
     def __do_check_idn(self) -> None:
         """Checking the IDN"""
