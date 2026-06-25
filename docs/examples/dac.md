@@ -1,4 +1,4 @@
-# DAC Characterization – Example
+# Example: DAC
 
 This example shows how to use `TestHandlerDAC` to characterize a
 Digital-Analog-Converter on the DUT: connecting to the DUT and the DMM,

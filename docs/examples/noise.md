@@ -1,4 +1,4 @@
-# Noise Metric Extraction – Example
+# Example: Noise
 
 This example shows how to use `extract_noise_metrics` to process a transient
 noise measurement: extracting noise metrics, computing the noise power

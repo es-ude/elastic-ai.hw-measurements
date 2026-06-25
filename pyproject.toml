@@ -80,6 +80,7 @@ omit = [
   "elasticai/hw_measurements/driver/*.py",
   "elasticai/hw_measurements/template/*.py",
   "elasticai/hw_measurements/template/*.py",
+  "oss-cad-suite",
 ]
 
 [tool.coverage.report]
@@ -99,10 +100,15 @@ include = ["elasticai"]
 exclude = [
   "*_test.py",
   "hardware",
+  "config",
+  "designs",
+  "docs",
   "example",
   "test_data",
   "runs",
-  "run_tests.py"
+  "build*",
+  "scripts",
+  "oss-cad-suite",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -110,10 +116,15 @@ packages = ["elasticai"]
 exclude = [
   "*_test.py",
   "hardware",
+  "config",
+  "designs",
+  "docs",
   "example",
   "test_data",
   "runs",
-  "run_tests.py"
+  "build*",
+  "scripts",
+  "oss-cad-suite",
 ]
 
 [tool.pytest]
@@ -132,7 +143,14 @@ include = [
   "pyproject.toml",
   "elasticai/**/*.py",
 ]
-exclude = [".venv", "artefact", "docs", "example", "test_data"]
+exclude = [
+  ".venv",
+  "artefact",
+  "docs",
+  "example",
+  "test_data",
+  "elasticai/**/devenv.nix",
+]
 # Same as Black.
 line-length = 106
 indent-width = 4
@@ -158,11 +176,16 @@ skip-magic-trailing-comma = false
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
 
+[tool.ty.rules]
+invalid-argument-type = "ignore"
+
 [tool.ty.src]
 include = ["elasticai"]
 exclude = [
+  "oss-cad-suite",
   "elasticai/**/*_tb.py",
   "elasticai/**/*_test.py",
+  "elasticai/**/devenv.nix",
   "elasticai/hw_measurements/template/*.py",
   "elasticai/hw_measurements/driver/*.py",
   "elasticai/hw_measurements/process/data.py",

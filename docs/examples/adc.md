@@ -1,4 +1,4 @@
-# ADC Characterization – Example
+# Example: ADC
 
 This example shows how to use `TestHandlerADC` to run an ADC characterization
 on the DUT: connecting to the DUT and the lab power supply, running the
