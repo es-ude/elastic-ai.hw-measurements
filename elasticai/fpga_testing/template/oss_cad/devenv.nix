@@ -12,7 +12,7 @@
   alej_run = "${pkgs.alejandra}/bin/alejandra";
   tombi_run = "${pkgs.tombi}/bin/tombi";
 
-  modulesDir = ./elasticai/fpga_testing/template/oss_cad;
+  modulesDir = ./.;
   nixFiles =
     if builtins.pathExists modulesDir
     then
@@ -74,7 +74,10 @@ in {
     };
   };
 
-  tasks = {
+  tasks = let
+    uv_run = "${pkgs-unstable.uv}/bin/uv run --active";
+    uv_build = "${pkgs-unstable.uv}/bin/uv build";
+  in {
     "project:sync" = {
       exec = ''
         ${uv_run} sync
@@ -82,7 +85,7 @@ in {
     };
     "package:build" = {
       exec = ''
-        ${uv_bin} bild
+        ${uv_bin} build
       '';
     };
     "docs:check" = {

@@ -1,0 +1,110 @@
+from copy import deepcopy
+
+import cocotb
+import pytest
+from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge
+from elasticai.creator.testing.cocotb_runner import run_cocotb_sim_for_src_dir
+
+from elasticai.fpga_testing import get_path_to_project
+from elasticai.fpga_testing.copy_design import copy_design_arty7_files
+from elasticai.fpga_testing.tests import cocotb_settings_arty7
+
+
+@cocotb.test()
+async def top_module(dut):
+    period_clk = 5
+    dut.UART_BITWIDTH.value.to_unsigned()
+    dut.UART_FIFO_BYTE_SIZE.value.to_unsigned()
+    baudrate = dut.UART_CNT_BAUDRATE.value.to_unsigned() * dut.UART_MOD.NSAMP.value.to_unsigned()
+    data_send_list = [
+        ["00000100", "00000000", "00000001"],  # enable LED
+        ["00000010", "00000000", "00000101"],  # Select DUT #2
+        ["01000000", "00000000", "00000001"],  # Set data value on ADR = 0
+        ["01000001", "00000000", "00000010"],  # Set data value on ADR = 1
+        ["01000010", "00000000", "00000011"],  # Set data value on ADR = 2
+        ["01000011", "00000000", "00000100"],  # Set data value on ADR = 3
+        ["01000100", "00000000", "00001000"],  # Set data value on ADR = 4
+        ["01000101", "00000000", "00010000"],  # Set data value on ADR = 5
+        ["01000110", "00000000", "00100000"],  # Set data value on ADR = 6
+        ["01000111", "00000000", "01000000"],  # Set data value on ADR = 7
+        ["01001000", "00000000", "10000000"],  # Set data value on ADR = 8
+        ["01001001", "00000001", "00000000"],  # Set data value on ADR = 9
+        ["01001010", "00000010", "00000000"],  # Set data value on ADR = 10
+        ["01001011", "00000100", "00000000"],  # Set data value on ADR = 11
+        ["01001100", "00001000", "00000000"],  # Set data value on ADR = 12
+    ]
+    for idx in range(12):
+        data_send_list.append([f"10{idx:06b}", "00000000", "00000000"])
+
+    data_send_list.append(["00000100", "00000000", "00000000"])  # disable LED
+    data_get_list = [["00000000", "00000000", "00000000"] for _ in data_send_list]
+    for idx, data in enumerate(data_send_list[0:-1]):
+        data_get_list[idx + 1] = data
+
+    # Initial definition
+    dut.CLK_100MHz.value = 0
+    dut.RSTN.value = 0
+    dut.UART_RX.value = 1
+
+    # Start clock and making reset
+    cocotb.start_soon(Clock(dut.CLK_100MHz, period_clk, unit="ns").start())
+    for _ in range(8):
+        await RisingEdge(dut.CLK_100MHz)
+    for idx in range(4):
+        await RisingEdge(dut.CLK_100MHz)
+        dut.RSTN.value = idx % 2
+        await RisingEdge(dut.CLK_100MHz)
+    dut.RSTN.value = 1
+    for _ in range(2):
+        await RisingEdge(dut.CLK_100MHz)
+
+    # make UART package transmission
+    for data_send, data_get in zip(data_send_list, data_get_list):
+        # Idle time
+        for _ in range(baudrate):
+            await RisingEdge(dut.CLK_100MHz)
+
+        # Do UART transmission
+        for data_tx in data_send:
+            # Start bit
+            dut.UART_RX.value = 0
+            for _ in range(baudrate):
+                await RisingEdge(dut.CLK_100MHz)
+            # Data Transmission
+            for val in data_tx[::-1]:
+                dut.UART_RX.value = val
+                for _ in range(baudrate):
+                    await RisingEdge(dut.CLK_100MHz)
+            # Stop bit
+            dut.UART_RX.value = 1
+            await RisingEdge(dut.uart_mod_rdy)
+            for _ in range(int(baudrate / 2)):
+                await RisingEdge(dut.CLK_100MHz)
+
+        # Idle time
+        for _ in range(baudrate):
+            await RisingEdge(dut.CLK_100MHz)
+
+    # Checking Ending
+    for _ in range(4 * baudrate):
+        await RisingEdge(dut.CLK_100MHz)
+
+
+@pytest.mark.simulation
+def test_ram_template() -> None:
+    cocotb_settings = deepcopy(cocotb_settings_arty7)
+    cocotb_settings["cocotb_test_module"] = "elasticai.fpga_testing.tests.arty7_ram_test"
+    run_cocotb_sim_for_src_dir(**cocotb_settings)
+
+
+@pytest.mark.simulation
+def test_ram_build() -> None:
+    artefact_dir = get_path_to_project() / "temp_build" / "arty7_ram"
+    artefact_dir.mkdir(parents=True, exist_ok=True)
+    copy_design_arty7_files(dest=artefact_dir)
+
+    cocotb_settings = deepcopy(cocotb_settings_arty7)
+    cocotb_settings["cocotb_test_module"] = "elasticai.fpga_testing.tests.arty7_ram_test"
+    cocotb_settings["src_files"] = list(artefact_dir.rglob("*.v"))
+    run_cocotb_sim_for_src_dir(**cocotb_settings)

@@ -1,97 +1,95 @@
 from pathlib import Path
 from shutil import copyfile, copytree
 
+import elasticai.fpga_testing as dut
+from elasticai.fpga_testing import get_path_to_project
 
-def copy_design_arty7_files(dest: Path) -> None:
+
+def _get_template_path() -> Path:
+    return Path(dut.__file__).parent / "template"
+
+
+def _get_basic_path() -> Path:
+    return get_path_to_project() / "designs"
+
+
+def _copy_design_files(src_device: Path, src_common: Path, dest: Path) -> None:
+    dest.mkdir(parents=True, exist_ok=True)
+    if not src_common == Path("."):
+        copytree(src=src_common, dst=dest, dirs_exist_ok=True)
+    if not src_device == Path("."):
+        copytree(src=src_device, dst=dest, dirs_exist_ok=True)
+
+
+def copy_design_arty7_files(dest: Path = _get_basic_path()) -> None:
     """Function for copying the design files to test structures on FPGA (here: DevBoard Digilent Arty A7)
     :param dest:    Path with destination folder to copy all files into
     :return:        None
     """
-    import elasticai.fpga_testing as dut
+    path2device = _get_template_path() / "arty7"
+    path2common = _get_template_path() / "common"
+    _copy_design_files(
+        src_device=path2device,
+        src_common=path2common,
+        dest=dest,
+    )
 
-    path2design = Path(dut.__file__).parent / "arty7"
 
-    dest.mkdir(parents=True, exist_ok=True)
-    copytree(src=path2design, dst=dest, dirs_exist_ok=True)
-
-
-def copy_design_env5_files(dest: Path) -> None:
-    """Function for copying the design files to test structures on FPGA (here: elasticAI ENV5)
+def copy_design_env5_files(dest: Path = _get_basic_path()) -> None:
+    """Function for copying the design files to test structures on FPGA (here: elasticAI.env5)
     :param dest:    Path with destination folder to copy all files into
     :return:        None
     """
-    import elasticai.fpga_testing as dut
+    path2device = _get_template_path() / "env5"
+    path2common = _get_template_path() / "common"
+    _copy_design_files(
+        src_device=path2device,
+        src_common=path2common,
+        dest=dest,
+    )
 
-    path2design = Path(dut.__file__).parent / "env5"
 
-    dest.mkdir(parents=True, exist_ok=True)
-    copytree(src=path2design, dst=dest, dirs_exist_ok=True)
+def copy_design_env6mini_files(dest: Path = _get_basic_path()) -> None:
+    """Function for copying the design files to test structures on FPGA (here: elasticAI.env6-mini)
+    :param dest:    Path with destination folder to copy all files into
+    :return:        None
+    """
+    path2device = _get_template_path() / "env6_mini"
+    path2common = _get_template_path() / "common"
+    _copy_design_files(
+        src_device=path2device,
+        src_common=path2common,
+        dest=dest,
+    )
 
 
-def copy_design_gatemate_files(dest: Path) -> None:
+def copy_design_olimex_gatemate_files(dest: Path = _get_basic_path()) -> None:
     """Function for copying the design files to test structures on FPGA (here: Olimex EVB Gatemate-A1)
     :param dest:    Path with destination folder to copy all files into
     :return:        None
     """
-    import elasticai.fpga_testing as dut
-
-    path2design = Path(dut.__file__).parent / "gatemate"
-
-    dest.mkdir(parents=True, exist_ok=True)
-    copytree(src=path2design, dst=dest, dirs_exist_ok=True)
-
-
-def copy_skeleton(name: str, dest: Path) -> None:
-    """Function for copying a skeleton to test structures on FPGAs
-    :param name:    Name of skeleton file [dnn, echo, filter, math, ram, rom]
-    :param dest:    Path with destination folder to copy all files into
-    :return:        None
-    """
-    if name.lower() not in ["dnn", "echo", "filter", "math", "ram", "rom"]:
-        raise ValueError(f"{name} is not a valid skeleton name")
-
-    import elasticai.fpga_testing as dut
-
-    path2design = Path(dut.__file__).parent / "skeleton"
-    copyfile(
-        src=path2design / f"skeleton_{name}.v",
-        dst=dest / f"skeleton_{name}.v",
+    path2device = _get_template_path() / "olimex_gatemate"
+    path2common = Path(".")  # _get_template_path() / "common"
+    _copy_design_files(
+        src_device=path2device,
+        src_common=path2common,
+        dest=dest,
     )
 
 
-def copy_vivado_implementation_results(path2project: Path, path2save: Path) -> None:
+def copy_skeleton(name: str, num_id: int, dest: Path) -> None:
     """Function for copying a skeleton to test structures on FPGAs
-    :param path2project:    Path to Vivado project
-    :param path2save:       Path with destination folder to copy all files into
-    :return:                None
+    :param name:    Name of skeleton file [dnn, filter, math, ram, rom]
+    :param num_id:  ID number of skeleton
+    :param dest:    Path with destination folder to copy all files into
+    :return:        None
     """
-    if not path2project.exists() and not path2project.is_dir():
-        raise FileNotFoundError(f"Folder {path2project} does not exist")
-    list_folder = list(path2project.glob("*.runs"))
-    if not list_folder:
-        raise FileNotFoundError(f"Vivado project in {path2project} does not exist")
+    if name.lower() not in ["dnn", "filter", "mac", "math", "ram", "rom"]:
+        raise ValueError(f"{name} is not a valid skeleton name")
 
-    path2results = list_folder[0] / "impl_1"
-    if not path2results.exists():
-        raise FileNotFoundError("No implementation results found")
-
-    file_copy = list()
-    file_copy.append(list(path2results.glob("*.bit"))[0])
-    file_copy.append(list(path2results.glob("*_clock_utilization_routed.rpt"))[0])
-    file_copy.append(list(path2results.glob("*_io_placed.rpt"))[0])
-    file_copy.append(list(path2results.glob("*_power_routed.rpt"))[0])
-    file_copy.append(list(path2results.glob("*_timing_summary_routed.rpt"))[0])
-    file_copy.append(list(path2results.glob("*_utilization_placed.rpt"))[0])
-
-    path2save.mkdir(parents=True, exist_ok=True)
-    for file in file_copy:
-        copyfile(src=file.absolute(), dst=path2save / file.name)
-
-
-if __name__ == "__main__":
-    from elasticai.fpga_testing import get_path_to_project
-
-    copy_vivado_implementation_results(
-        path2project=Path(get_path_to_project("fpga_design")),
-        path2save=Path(get_path_to_project("artefact")) / "env5",
+    path2design = _get_template_path() / "skeleton"
+    dest.mkdir(parents=True, exist_ok=True)
+    copyfile(
+        src=path2design / f"skeleton_{name}.v".lower(),
+        dst=dest / f"skeleton_{name}_{num_id}.v".lower(),
     )

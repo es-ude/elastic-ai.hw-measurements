@@ -1,4 +1,4 @@
-# Amplifier Characterization – Example
+# Example: Amplifier
 
 This example shows how to use `TestHandlerAmplifier` to characterize an
 electronic amplifier stage: connecting to the lab power supply and DMM,
