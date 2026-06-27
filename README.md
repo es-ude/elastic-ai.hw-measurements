@@ -14,5 +14,5 @@ We also recommend to use ``devenv``.
 
 ## Structure
 This repo includes two sub-packagges:
-- Testing Verilog code on real FPGA ([Link to Readme](https://github.com/es-ude/elastic-ai.hw-measurements/elasticai/fpga_testing/README.md))
-- Testing analog components of your system ([Link to Readme](https://github.com/es-ude/elastic-ai.hw-measurements/elasticai/hw_measurements/README.md))
+- Testing Verilog code on real FPGA ([Link to Readme](elasticai/fpga_testing/README.md))
+- Testing analog components of your system ([Link to Readme](elasticai/hw_measurements/README.md))
