@@ -84,7 +84,7 @@ def copy_skeleton(name: str, num_id: int, dest: Path) -> None:
     :param dest:    Path with destination folder to copy all files into
     :return:        None
     """
-    if name.lower() not in ["dnn", "filter", "mac", "math", "ram", "rom"]:
+    if name.lower() not in ["dnn", "filter", "math", "ram", "rom"]:
         raise ValueError(f"{name} is not a valid skeleton name")
 
     path2design = _get_template_path() / "skeleton"
