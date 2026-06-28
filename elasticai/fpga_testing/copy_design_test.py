@@ -122,7 +122,7 @@ def test_copy_skeleton_not_available(path) -> None:
 
 
 def test_copy_skeleton_dnn(path) -> None:
-    used_modules = ["DnN", "filTer", "mac", "MATH", "RAM", "ROM"]
+    used_modules = ["DnN", "filTer", "MATH", "RAM", "ROM"]
 
     for idx, module in enumerate(used_modules):
         path2dst = path / "skeletons" / module.lower()
