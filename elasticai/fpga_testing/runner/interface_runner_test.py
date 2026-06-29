@@ -4,9 +4,14 @@ from .interface_runner import ConfigurationDUT, InterfaceRunner, ProtocolRegiste
 
 
 class DummyRunner(InterfaceRunner):
+    _device_mode: int = 0
+
     def __init__(self, com_port: str = "AUTOCOM") -> None:
         super().__init__(com_port, num_delay_messages=0)
         self._active = False
+
+    def set_dut_mode(self, dut_mode: int) -> None:
+        self._device_mode = dut_mode
 
     @property
     def is_active(self) -> bool:
@@ -23,7 +28,12 @@ class DummyRunner(InterfaceRunner):
 
     def get_dut_config(self, num_target: int) -> ConfigurationDUT:
         return ConfigurationDUT(
-            bitwidth_input=16, bitwidth_output=8, dut_type=1, num_duts=1, num_inputs=1, num_outputs=1
+            bitwidth_input=16,
+            bitwidth_output=8,
+            dut_type=self._device_mode,
+            num_duts=1,
+            num_inputs=1,
+            num_outputs=1,
         )
 
     def select_device_for_testing(self, num_dut: int) -> None:
