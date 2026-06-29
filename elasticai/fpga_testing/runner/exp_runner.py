@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from elasticai.fpga_testing import get_path_to_project
 from elasticai.fpga_testing._helper import YamlConfigHandler
-from elasticai.fpga_testing.runner.com.device_serial import DeviceSerial
+from elasticai.fpga_testing.runner.interface_runner import InterfaceRunner
 
 
 @dataclass
@@ -23,19 +23,16 @@ class ExperimentSettings:
 
 
 class ExperimentMain:
-    _device: DeviceSerial
+    _device: InterfaceRunner
     _path2run: Path
     _settings: ExperimentSettings
     _buffer_data_send: list
     _buffer_data_get: bytes
 
-    def __init__(self, buffer_size: int = 10) -> None:
+    def __init__(self, device: type[InterfaceRunner]) -> None:
         """Class for handling the Experiment Main Setup
-        Args:
-            buffer_size:    Number of transmission which will be done once using Serial Package
-                            [Default: 10, best performance using PySerial]
-        Returns:
-            None
+        :param device:  Device class
+        :return:        None
         """
         self._settings = YamlConfigHandler(
             yaml_template=ExperimentSettings(com_port="AUTOCOM", selected_dut=[1, 2]),
@@ -45,9 +42,7 @@ class ExperimentMain:
 
         self._path2run = get_path_to_project("runs")
 
-        self._device = DeviceSerial(
-            com_port=self._settings.com_port, buffer_size=buffer_size, baudrate=115200
-        )
+        self._device = device(com_port=self._settings.com_port)
 
     @property
     def get_path2run(self) -> Path:
@@ -60,6 +55,7 @@ class ExperimentMain:
         return self._settings
 
     def get_dut_type(self) -> list:
+        """Returning the number of all DUT types, implemented on the device"""
         result = self._device.get_dut_configs()
         return [info.dut_type for info in result.values()]
 
@@ -76,11 +72,14 @@ class ExperimentMain:
             self._path2run.mkdir(parents=True, exist_ok=True)
         return self.get_path2run
 
-    def do_inference(self, device_test: int) -> float:
-        """Doing the inference from Computer to Device for testing accelerators with number of selected target"""
+    def do_inference(self, target_id: int) -> float:
+        """Doing the inference from Computer to Device for testing accelerators with number of selected target
+        :param target_id:   Device number
+        :return:            Time duration for running test duration
+        """
         self._device.open_serial()
-        self._device.select_device_for_testing(device_test)
-        self._device.do_led_control(True)
+        self._device.select_device_for_testing(target_id)
+        self._device.set_led_fpga(True)
 
         self._buffer_data_get = bytes()
         if self._device.is_active:
@@ -91,19 +90,20 @@ class ExperimentMain:
                 self._buffer_data_get += self._device.do_inference(data)
             process_duration = time_ns() - process_duration
             # --- Delay for getting last samples
-            self._buffer_data_get += self._device.do_inference_delay(self._device.get_slicing_position)
+            self._buffer_data_get += self._device.do_inference_empty(self._device.get_slicing_position)
         else:
             raise RuntimeError("Device not open - Please check communication!")
 
-        self._device.do_led_control(False)
+        self._device.set_led_fpga(False)
         self._device.close_serial()
         return process_duration
 
 
-def extract_available_structures_on_device() -> tuple[list, list]:
+def extract_available_structures_on_device(device: type[InterfaceRunner]) -> tuple[list, list]:
     """Function for extracting available structures on device
-    :return:            Two list with [0] available structures on device and [1] selected test on device
+    :param device:  Device class
+    :return:        Two list with [0] available structures on device and [1] selected test on device
     """
-    exp = ExperimentMain()
+    exp = ExperimentMain(device=device)
     set = exp.get_settings
     return exp.get_dut_type(), set.selected_dut
