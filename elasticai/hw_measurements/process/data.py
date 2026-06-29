@@ -11,17 +11,17 @@ from elasticai.hw_measurements.process.common import ProcessCommon
 def window_method(window_size: int, method: str = "hamming") -> np.ndarray:
     """Generating window for smoothing transformation method.
     :param window_size:     Integer number with size of the window
-    :param method:          Selection of window method ['': None, 'Hamming', 'guassian', 'bartlett', 'blackman']
+    :param method:          Selection of window method ['': None, 'Hamming', 'gaussian', 'bartlett', 'blackman']
     :return:                Numpy array with window
     """
     methods_avai = {
         "hamming": np.hamming(window_size),
-        "guassian": gaussian(window_size, int(0.16 * window_size), sym=True),
+        "gaussian": gaussian(window_size, int(0.16 * window_size), sym=True),
         "hanning": np.hanning(window_size),
         "bartlett": np.bartlett(window_size),
         "blackman": np.blackman(window_size),
     }
-    if method not in list(methods_avai.keys()):
+    if method.lower() not in list(methods_avai.keys()):
         raise ValueError(f"Method {method} is not available")
 
     window = np.ones(window_size)

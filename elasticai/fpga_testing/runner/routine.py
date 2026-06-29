@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from elasticai.fpga_testing import get_path_to_project
 from elasticai.fpga_testing.definitions import ConfigurationID
 from elasticai.fpga_testing.runner.cases import (
     run_echo_on_target,
@@ -11,11 +14,11 @@ from elasticai.fpga_testing.runner.exp_runner import extract_available_structure
 from elasticai.fpga_testing.runner.interface_runner import InterfaceRunner
 
 
-def run_embedded_test(device: type[InterfaceRunner], show_plots: bool = True) -> None:
+def run_embedded_test(device: type[InterfaceRunner], show_plots: bool = True) -> Path:
     """Function for running the on-device test cases
     :param device:              Device API to handle all test commands
     :param show_plots:          If true, showing and blocking the results
-    :return:                    None
+    ::                    Path to actual test saving folder
     """
     test_type, test_to_run = extract_available_structures_on_device(device=device)
 
@@ -42,3 +45,6 @@ def run_embedded_test(device: type[InterfaceRunner], show_plots: bool = True) ->
                 run_inference_on_target(**settings)
             case ConfigurationID.ProcessingPipeline:
                 raise NotImplementedError("Test Code for End-To-End Processors is not implemented")
+            case _:
+                raise NotImplementedError("Use case is not available")
+    return get_path_to_project("runs")

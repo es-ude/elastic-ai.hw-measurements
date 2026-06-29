@@ -1,15 +1,16 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy import signal as scft
 from scipy.signal import find_peaks
 
 from elasticai.fpga_testing import get_path_to_project
-from elasticai.fpga_testing._helper import YamlConfigHandler
-from elasticai.fpga_testing.runner.exp_dut import DeviceUnderTestHandler
+from elasticai.fpga_testing._helper import FilterElement, YamlConfigHandler
+from elasticai.fpga_testing._helper.signal_generator import generate_noise, generate_sinusoidal_waveform
 from elasticai.fpga_testing.runner.exp_runner import ExperimentMain
-from elasticai.fpga_testing.runner.signal_generator import generate_noise, generate_sinusoidal_waveform
+from elasticai.fpga_testing.runner.interface_runner import InterfaceRunner
+from elasticai.fpga_testing.runner.prepare_funcs import DataProcessor
 from elasticai.hw_measurements.plots import get_plot_color, save_figure
 
 
@@ -57,16 +58,15 @@ DefaultSettingsBode = SettingsBode(
 
 
 class ExperimentBode(ExperimentMain):
-    _device: DeviceUnderTestHandler
+    _device: InterfaceRunner
     __settings_bode: SettingsBode
     __data_scaling_value: int
 
-    def __init__(self, device_id: int) -> None:
+    def __init__(self, device: type[InterfaceRunner], device_id: int) -> None:
         """Class for handling the Experiment Setup for extracting the Bode Diagram of filter/amplifier circuits
         :param device_id:   Integer value with device ID of test structure
         """
-        super().__init__()
-        self._type_experiment = "_bode"
+        super().__init__(device=device)
 
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsBode
@@ -77,8 +77,8 @@ class ExperimentBode(ExperimentMain):
             path2yaml=get_path_to_project("config"),
         )
         self.__settings_bode = yaml_handler.get_class(SettingsBode)
-        self.__data_scaling_value = 2 ** (
-            self._device.get_bitwidth_data - self.__settings_bode.bitwidth_filter
+        self.__data_scaling_value = self._device._get_data_scaling_value(
+            self.__settings_bode.bitwidth_filter
         )
 
     @property
@@ -118,7 +118,7 @@ class ExperimentBode(ExperimentMain):
 
         time, waveform_ana = self.generate_sinusoidal_signal(f_sig, no_periods, sigma_noise)
         self._buffer_data_send = self._device.slice_data_for_transmission(
-            self._device.preparing_data_streaming_architecture(
+            DataProcessor().preparing_data_streaming_architecture(
                 signal=waveform_ana, bit_position_start=self.__data_scaling_value, is_signed=is_signed
             )
         )
@@ -129,7 +129,7 @@ class ExperimentBode(ExperimentMain):
         data_return = self._device.slice_data_from_transmission(
             data=self._buffer_data_get, is_signed=self.__settings_bode.signed_data
         )
-        return data_return / self.__data_scaling_value
+        return np.asarray(data_return) / self.__data_scaling_value
 
     def extract_gain_phase(
         self, f_sig: float, xin: np.ndarray, xout: np.ndarray, start_period=3
@@ -182,7 +182,7 @@ class ExperimentBode(ExperimentMain):
             num=self.__settings_bode.total_steps,
             endpoint=True,
         )
-        emu_filter = filter_stage(
+        emu_filter = FilterElement(
             N=self.__settings_bode.ref_filter_order,
             fs=self.__settings_bode.sampling_rate,
             f_filter=self.__settings_bode.ref_filter_corner,
@@ -194,19 +194,20 @@ class ExperimentBode(ExperimentMain):
         return f_sig, emu_bode
 
 
-def run_filter_on_target(device_id: int, block_plot: bool = False) -> None:
+def run_filter_on_target(device: type[InterfaceRunner], device_id: int, block_plot: bool = False) -> Path:
     """Function for running the filter test with structures on target device
-    :param device_id:               Device ID (unsigned integer) for calling the right target on device
-    :param block_plot:              Blocking and showing plot
-    :return:                        None
+    :param device:      Device class with InterfaceRunner interface
+    :param device_id:   Device ID (unsigned integer) for calling the right target on device
+    :param block_plot:  Blocking and showing plot
+    :return:            None
     """
     # --- Preparing Test
-    exp0 = ExperimentBode(device_id)
+    exp0 = ExperimentBode(device=device, device_id=device_id)
     settings_bode = exp0.get_settings_func
     f_sig, bode_ref = exp0.generate_func_variables()
 
     # Control Routine
-    exp0.init_experiment(f"{device_id:02d}")
+    exp0.init_experiment(f"filter_{device_id:02d}")
     data_dut = {
         "process_time": [],
         "data_in": [],
@@ -237,7 +238,8 @@ def run_filter_on_target(device_id: int, block_plot: bool = False) -> None:
         data_dut["phase_dut"].append(phase)
     # --- Ending
     np.save(f"{exp0.get_path2run}/results_bode.npy", data_dut, allow_pickle=True)
-    plot_bode(f_sig, data_dut, exp0.get_path2run, block_plot=block_plot)
+    plot_bode(f_sig, data_dut, exp0.get_path2run.as_posix(), block_plot=block_plot)
+    return exp0.get_path2run
 
 
 def plot_bode(f_sig: np.ndarray, data_dut: dict, path: str = "", block_plot: bool = False) -> None:
@@ -288,170 +290,3 @@ def plot_bode(f_sig: np.ndarray, data_dut: dict, path: str = "", block_plot: boo
         save_figure(plt, path, "bode_plot")
     if block_plot:
         plt.show(block=True)
-
-
-class filter_stage:
-    __filt_btype_dict: dict = {
-        "low": "lowpass",
-        "high": "highpass",
-        "bandpass": "bandpass",
-        "bandstop": "bandstop",
-        "all": "allpass",
-    }
-    __filt_ftype_dict: dict = {
-        "butter": "butter",
-        "cheby1": "cheby1",
-        "cheby2": "cheby2",
-        "ellip": "ellip",
-        "bessel": "bessel",
-    }
-    __coeff_a: np.ndarray
-    __coeff_b: np.ndarray
-
-    def __init__(
-        self,
-        N: int,
-        fs: float,
-        f_filter: list,
-        use_iir_filter: bool,
-        btype="low",
-        ftype="butter",
-        use_filtfilt=False,
-    ):
-        """Class for filtering and getting the filter coefficient
-        (If using Allpass
-        Args:
-            N:                  Order number of used filter
-            fs:                 Sampling rate of data stream
-            f_filter:           Filter corner frequency as list ('low', 'high', 'all' (1st order) = [f_brk]
-                                and 'bandpass', 'bandstop' = [f_c0, f_c1] and 'all' (2nd order)' = [f_brk and f_bw])
-            btype:              Used filter type ['low', 'high', 'bandpass', 'bandstop', 'all' (IIR, 1st/2nd Order)]
-            ftype:              Used filter design ['butter', 'cheby1', 'cheby2', 'ellip', 'bessel']
-            use_iir_filter:     Used filter topology [True: IIR, False: FIR]
-            use_filtfilt:       Using filtfilt functionality from scipy.signal (Zero-phase filtering)
-        """
-        self.__sampling_rate = fs
-        self.__coeffb_defined = False
-        self.__coeffa_defined = False
-        self.__use_filtfilt = use_filtfilt
-
-        self.__filter_type_iir_used = use_iir_filter
-        self.__filter_order = N
-        self.__filter_corner = np.array(f_filter, dtype="float")
-        self.__filt_ftype = self.__get_filter_ftype(ftype)
-        self.__filt_btype = self.__get_filter_btype(btype)
-        self.__extract_filter_params()
-
-    def __extract_filter_params(self) -> None:
-        """Extracting the filter coefficient with used settings"""
-        if self.__filter_type_iir_used and not self.__filt_btype == "allpass":
-            # --- Defining an IIR filter (excluding allpass)
-            filter_params = scft.iirfilter(
-                N=self.__filter_order,
-                Wn=2 * self.__filter_corner / self.__sampling_rate,
-                btype=self.__filt_btype,
-                ftype=self.__filt_ftype,
-                analog=False,
-                output="ba",
-            )
-            self.__coeff_b = filter_params[0]
-            self.__coeffb_defined = True
-            self.__coeff_a = np.array(filter_params[1])
-            self.__coeffa_defined = True
-        elif self.__filter_type_iir_used and self.__filt_btype == "allpass":
-            match self.__filter_order:
-                case 1:
-                    # --- Getting the coefficient (First Order)
-                    val = np.tan(np.pi * self.__filter_corner[0] / self.__sampling_rate)
-                    iir_c0 = (val - 1) / (val + 1)
-                    self.__coeff_b = np.array([iir_c0, 1.0])
-                    self.__coeffb_defined = True
-                    self.__coeff_a = np.array([1.0, iir_c0])
-                    self.__coeffa_defined = True
-                case 2:
-                    # --- Getting the coefficient (Second Order)
-                    val = np.tan(np.pi * self.__filter_corner[1] / self.__sampling_rate)
-                    iir_c0 = (val - 1) / (val + 1)
-                    iir_c1 = -np.cos(2 * np.pi * self.__filter_corner[0] / self.__sampling_rate)
-                    self.__coeff_b = np.array([-iir_c0, iir_c1 * (1 - iir_c0), 1.0])
-                    self.__coeffb_defined = True
-                    self.__coeff_a = np.array([1.0, iir_c1 * (1 - iir_c0), -iir_c0])
-                    self.__coeffa_defined = True
-                case _:
-                    raise NotImplementedError(
-                        "Allpass IIR-filters are only implemented for 1st and 2nd order! - Please change!"
-                    )
-        elif self.__filter_type_iir_used and self.__filt_btype == "allpass":
-            raise NotImplementedError("Allpass Filter is only implemented for IIR filter types!")
-        else:
-            # --- Defining a FIR filter
-            filter_params = scft.firwin(
-                numtaps=self.__filter_order,
-                cutoff=self.__filter_corner,
-                fs=self.__sampling_rate,
-                pass_zero=self.__filt_btype,
-            )
-            self.__coeff_b = filter_params
-            self.__coeffb_defined = True
-            self.__coeff_a = np.array(1.0)
-            self.__coeffa_defined = False
-
-    def __get_filter_btype(self, type_used: str) -> str:
-        """Definition of the filter type used in scipy function"""
-        type_out = ""
-        for key, type0 in self.__filt_btype_dict.items():
-            if type_used == key:
-                type_out = type0
-                break
-        if type_out == "":
-            raise NotImplementedError("Type of used filter type is not available")
-        return type_out
-
-    def __get_filter_ftype(self, type_used: str) -> str:
-        """Definition of the filter type used in scipy function"""
-        type_out = ""
-        for key, type0 in self.__filt_ftype_dict.items():
-            if type_used == key:
-                type_out = type0
-                break
-        if type_out == "":
-            raise NotImplementedError("Type of used filter type is not available")
-        return type_out
-
-    def filter(self, xin: np.ndarray) -> np.ndarray:
-        """Performing the filtering of input data
-        Args:
-            xin:    Input numpy array
-        Returns:
-            Numpy array with filtered output
-        """
-        return (
-            scft.lfilter(b=self.__coeff_b, a=self.__coeff_a, x=xin)
-            if not self.__use_filtfilt
-            else scft.filtfilt(b=self.__coeff_b, a=self.__coeff_a, x=xin)
-        )
-
-    def freq_response(self, freq: np.ndarray) -> dict:
-        """Getting the frequency response of the filter for specific frequency values
-        Args:
-            freq:       Numpy array with frequency values
-        Return:
-            Dict with ['freq': frequency, 'gain': gain, 'phase': phase]
-        """
-        if self.__filter_type_iir_used:
-            fout = scft.iirfilter(
-                N=self.__filter_order,
-                Wn=self.__filter_corner,
-                btype=self.__filt_btype,
-                ftype=self.__filt_ftype,
-                analog=True,
-                output="ba",
-            )
-            w, h = scft.freqs(b=fout[0], a=fout[1], worN=freq)
-        else:
-            w, h = scft.freqz(b=self.__coeff_b, a=1, fs=self.__sampling_rate, worN=freq)
-
-        h0 = np.array(h)
-        gain = np.abs(h0)
-        phase = np.angle(h0, deg=True)
-        return {"freq": w, "gain": gain, "phase": phase}
