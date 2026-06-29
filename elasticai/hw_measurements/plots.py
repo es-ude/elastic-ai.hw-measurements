@@ -279,7 +279,6 @@ def plot_fra_data(
         phase[xpos:] += -360.0 if style else +360.0
 
     # --- Extract features
-    # TODO: Refactor with own function
     num_pol = 1
     print("----------------------------")
     print(f"Gain_max = {data.gain.max():.2f} dB")

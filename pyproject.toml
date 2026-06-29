@@ -136,7 +136,7 @@ minversion = "9.0"
 norecursedirs = []
 python_files = ["*_test.py"]
 pythonpath = ["."]
-testpaths = ["elasticai/*"]
+testpaths = ["elasticai/*", "example/fpga_testing_arty7*"]
 
 [tool.ruff]
 include = [

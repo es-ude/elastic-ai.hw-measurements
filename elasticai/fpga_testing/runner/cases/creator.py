@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from elasticai.creator.arithmetic import FxpArithmetic, FxpParams
@@ -8,10 +9,12 @@ from torch import Tensor, cat, ones_like, zeros
 
 from elasticai.fpga_testing import get_path_to_project
 from elasticai.fpga_testing._helper import YamlConfigHandler
-from elasticai.fpga_testing.runner.exp_dut import DeviceUnderTestHandler
 from elasticai.fpga_testing.runner.exp_runner import ExperimentMain
+from elasticai.fpga_testing.runner.interface_runner import InterfaceRunner
+from elasticai.fpga_testing.runner.prepare_funcs import DataProcessor
 
 
+# TODO: Add interface input for Sequential and Dataset
 def get_basic_test_model(
     num_inputs: int, num_outputs: int, total_bits: int, frac_bits: int
 ) -> Sequential:
@@ -30,22 +33,20 @@ def get_basic_test_model(
 
 
 def get_basic_data_model(num_input: int, bit_width: int, frac_width: int, signed_data: bool) -> Tensor:
-    max_val = 2 ** (bit_width - frac_width)
-    start_value = -max_val / 2 if signed_data else 0
-    stop_value = max_val / 2 if signed_data else max_val
+    params = FxpParams(total_bits=bit_width, frac_bits=frac_width, signed=signed_data)
 
-    # Creating the dummy
-    input_tensor = zeros((1, num_input))
+    input_tensor = zeros((0, num_input))
     for idx_array in range(0, num_input):
-        for value in np.arange(start_value, stop_value, 2 ** (-frac_width)):
+        for value in np.arange(
+            params.minimum_as_rational, params.maximum_as_rational, params.minimum_step_as_rational
+        ):
             list_zeros = [0.0 for _ in range(0, num_input)]
             list_zeros[idx_array] = value
 
             new_input = Tensor([list_zeros])
             input_tensor = cat((input_tensor, new_input), dim=0)
 
-    # Converting to fixed point
-    fxp_conf = FxpArithmetic(fxp_params=FxpParams(bit_width, frac_width))
+    fxp_conf = FxpArithmetic(fxp_params=params)
     return fxp_conf.as_rational(fxp_conf.cut_as_integer(input_tensor))
 
 
@@ -79,6 +80,14 @@ class SettingsCreator:
     def get_skeleton_id_integer(self) -> int:
         return int.from_bytes(self.skeleton_id, byteorder="big")
 
+    @property
+    def get_fxp_params(self) -> FxpParams:
+        return FxpParams(
+            total_bits=self.model_bitwidth,
+            frac_bits=self.model_bitfrac,
+            signed=True,
+        )
+
 
 DefaultSettingsCreator = SettingsCreator(
     num_samples_input=5,
@@ -90,31 +99,32 @@ DefaultSettingsCreator = SettingsCreator(
 
 
 class ExperimentCreator(ExperimentMain):
-    _device: DeviceUnderTestHandler
+    _device: InterfaceRunner
+    _arith: FxpArithmetic
     __settings_dnn: SettingsCreator
     __data_scaling_value: int
 
-    def __init__(self, device_id: int) -> None:
+    def __init__(self, device: type[InterfaceRunner], device_id: int) -> None:
         """Class for handling the Experiment Setup for calling data from LUT device (using skeleton version 1.0)
+        :param device:      interface runner device
         :param device_id:   Integer value with device ID of test structure
         """
-        super().__init__()
-        self._type_experiment = "_dnn"
+        super().__init__(device=device)
 
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsCreator
         set.model_bitwidth = self.get_bitwidth_creator
         set.num_samples_input = self.get_num_input_creator
         set.num_samples_output = self.get_num_output_creator
-        yaml_handler = YamlConfigHandler(
+
+        self.__settings_dnn = YamlConfigHandler(
             set,
             yaml_name=f"Config_{device_id:03d}_Creator",
             path2yaml=get_path_to_project("config"),
-        )
-        self.__settings_dnn = yaml_handler.get_class(SettingsCreator)
-        self.__data_scaling_value = 2 ** (
-            self._device.get_bitwidth_data - self.__settings_dnn.model_bitwidth
-        )
+        ).get_class(SettingsCreator)
+
+        self.__data_scaling_value = self._device._get_data_scaling_value(self.get_bitwidth_creator)
+        self._arith = FxpArithmetic(self.__settings_dnn.get_fxp_params)
 
     @property
     def get_bitwidth_creator(self) -> int:
@@ -133,32 +143,28 @@ class ExperimentCreator(ExperimentMain):
         return self.__settings_dnn
 
     def __preprocess_read_skeleton_id(self) -> None:
-        """Reading the ID from skeleton, implemented on device"""
         self._buffer_data_send = self._device.slice_data_for_transmission(
-            self._device.preparing_data_reading_skeleton_id(16)
+            DataProcessor().preparing_data_reading_skeleton_id(16)
         )
 
     def __postprocess_read_skeleton_id(self) -> list:
-        """Post-processing the data from device to have in readable format and numpy format"""
-        data_return = (
-            self._device.slice_data_from_transmission(self._buffer_data_get, False)
-            / self.__data_scaling_value
-        )
+        val = self._device.slice_data_from_transmission(self._buffer_data_get, False)
+        data_return = np.asarray(val) / self.__data_scaling_value
         return [int(val) for val in data_return]
 
     def get_skeleton_id(self, device_id: int) -> int:
-        """"""
         self.__preprocess_read_skeleton_id()
         self.do_inference(device_id)
         id_list = self.__postprocess_read_skeleton_id()
         return int.from_bytes(bytes(id_list), byteorder="big")
 
     def preprocess_model_data(self, data_input: Tensor) -> None:
-        """Preprocessing the data in order to have the data stream suitable for tested device (hex and data frame)"""
         data_in_numpy = data_input.flatten().cpu().detach().numpy()
-        transformed_data = [val * (2**self.__settings_dnn.model_bitfrac) for val in data_in_numpy]
+        transformed_data = [
+            int(val / self._arith._config.minimum_step_as_rational) for val in data_in_numpy
+        ]
 
-        data_prepared = self._device.preparing_data_creator_architecture(
+        data_prepared = DataProcessor().preparing_data_creator_architecture(
             signal=transformed_data,
             num_input_layer=self.__settings_dnn.num_samples_input,
             num_output_layer=self.__settings_dnn.num_samples_output,
@@ -168,7 +174,6 @@ class ExperimentCreator(ExperimentMain):
         self._buffer_data_send = self._device.slice_data_for_transmission(data_prepared)
 
     def postprocess_model_data(self) -> np.ndarray:
-        """Post-processing the data from device to have in readable format and numpy format"""
         data_return = self._device.slice_data_from_transmission(
             data=self._buffer_data_get, is_signed=True
         )
@@ -186,14 +191,17 @@ class ExperimentCreator(ExperimentMain):
         return data0
 
 
-def run_inference_on_target(device_id: int, block_plot: bool = False) -> None:
+def run_inference_on_target(
+    device: type[InterfaceRunner], device_id: int, block_plot: bool = False
+) -> Path:
     """Function for running the DNN (quantized) test with structures on target device
+    :param device:      Device class with InterfaceRunner interface
     :param device_id:   Integer value with device ID of test structure
     :param block_plot:  If true, blocking and showing plots
     :return:            None
     """
     # --- Preparing Test
-    exp0 = ExperimentCreator(device_id)
+    exp0 = ExperimentCreator(device=device, device_id=device_id)
     settings_dnn = exp0.get_settings_func
 
     # --- Run Model for Predicting Value
@@ -202,25 +210,19 @@ def run_inference_on_target(device_id: int, block_plot: bool = False) -> None:
     inference_expected = model_inference_use(data_inference_use)
 
     # --- Control Routine
-    print(
-        "\nSystem Test for Implemented Creator NN Accelerator on FPGA"
-        "\n===================================================================="
-    )
-    data_dut = {"process_time": [], "data_in": [], "data_out": []}
-
-    exp0.init_experiment(f"{device_id:02d}")
+    exp0.init_experiment(f"dnn_{device_id:02d}")
     # --- Step #1: Reading the Skeleton ID
     skeleton_id_device = exp0.get_skeleton_id(device_id)
     print(f"Getting the skeleton ID: {skeleton_id_device.to_bytes(16, 'big')}")
     print(f"Right ID available? -->  {(skeleton_id_device == settings_dnn.get_skeleton_id_integer)}")
 
     # --- Step #2: Inference
-    print("\nData Inference:")
     exp0.preprocess_model_data(data_inference_use)
     time_run = exp0.do_inference(device_id)
     data_inference_out = exp0.postprocess_model_data()
 
     # --- Step #3: Processing
+    data_dut = {"process_time": [], "data_in": [], "data_out": []}
     ite = 0
     cnt_true = 0
     cnt_false = 0
@@ -249,3 +251,4 @@ def run_inference_on_target(device_id: int, block_plot: bool = False) -> None:
         f"\t\tcnt_false = {100 * cnt_false / inference_expected.shape[0]:.2f} %"
     )
     np.save(f"{exp0.get_path2run}/results.npy", data_dut, allow_pickle=True)
+    return exp0.get_path2run

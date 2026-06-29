@@ -1,12 +1,14 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from elasticai.fpga_testing import get_path_to_project
 from elasticai.fpga_testing._helper import YamlConfigHandler
-from elasticai.fpga_testing.runner.exp_dut import DeviceUnderTestHandler
 from elasticai.fpga_testing.runner.exp_runner import ExperimentMain
+from elasticai.fpga_testing.runner.interface_runner import InterfaceRunner
+from elasticai.fpga_testing.runner.prepare_funcs import DataProcessor
 from elasticai.hw_measurements.plots import get_plot_color, save_figure
 
 
@@ -40,17 +42,16 @@ DefaultSettingsMult = SettingsMult(input_size=2, bitwidth_data=8, step_size=8, s
 
 
 class ExperimentMult(ExperimentMain):
-    _device: DeviceUnderTestHandler
+    _device: InterfaceRunner
     __settings_mult: SettingsMult
     __data_scaling_input: int
     __data_scaling_output: int
 
-    def __init__(self, device_id: int) -> None:
+    def __init__(self, device: type[InterfaceRunner], device_id: int) -> None:
         """Class for handling the Echo Function on device
         :param device_id: Integer value with device ID of test structure
         """
-        super().__init__()
-        self._type_experiment = "_mult"
+        super().__init__(device=device)
 
         self.__header = self._device.get_dut_config(device_id)
         set = DefaultSettingsMult
@@ -62,11 +63,11 @@ class ExperimentMult(ExperimentMain):
             path2yaml=get_path_to_project("config"),
         )
         self.__settings_mult = yaml_handler.get_class(SettingsMult)
-        self.__data_scaling_input = 2 ** (
-            self._device.get_bitwidth_data - self.get_bitwidth_input_structure
+        self.__data_scaling_input = self._device._get_data_scaling_value(
+            self.get_bitwidth_input_structure
         )
-        self.__data_scaling_output = 2 ** (
-            self._device.get_bitwidth_data - self.get_bitwidth_output_structure
+        self.__data_scaling_output = self._device._get_data_scaling_value(
+            self.get_bitwidth_output_structure
         )
 
     @property
@@ -108,7 +109,7 @@ class ExperimentMult(ExperimentMain):
     def preprocess_data(self, waveform: np.ndarray) -> None:
         """Preprocessing the data in order to have the data stream suitable for tested device (hex and data frame)"""
         self._buffer_data_send = self._device.slice_data_for_transmission(
-            self._device.preparing_data_arithmetic_architecture(
+            DataProcessor().preparing_data_arithmetic_architecture(
                 signal=waveform.tolist(),
                 bit_position_start=self.__data_scaling_input,
                 is_signed=self.__settings_mult.signed_data,
@@ -118,26 +119,27 @@ class ExperimentMult(ExperimentMain):
     def postprocess_data(self) -> np.ndarray:
         """Post-processing the data from device to have in readable format and numpy format"""
         data_return = self._device.slice_data_from_transmission(
-            data=self._buffer_data_get, is_signed=self.__settings_mult.signed_data, stepsize=1
+            data=self._buffer_data_get, is_signed=self.__settings_mult.signed_data
         )
         return (
-            data_return[1 + self.get_num_input_structure :: 1 + self.get_num_input_structure]
+            np.asarray(data_return[1 + self.get_num_input_structure :: 1 + self.get_num_input_structure])
             / self.__data_scaling_output
         )
 
 
-def run_math_on_target(device_id: int, block_plot: bool = False) -> None:
+def run_math_on_target(device: type[InterfaceRunner], device_id: int, block_plot: bool = False) -> Path:
     """Function for running the echo server test on target device
+    :param device:          Device class with InterfaceRunner interface
     :param device_id:       Device ID (unsigned integer) for calling the right target on device
     :param block_plot:      Blocking and showing plot
     :return:                None
     """
     # --- Preparing Test
-    exp0 = ExperimentMult(device_id)
+    exp0 = ExperimentMult(device=device, device_id=device_id)
     settings_math = exp0.get_settings_func
 
     # Control Routine
-    exp0.init_experiment(f"{device_id:02d}")
+    exp0.init_experiment(f"math_{device_id:02d}")
     data_dut = {"process_time": [], "data_in": [], "data_out": [], "data_ref": []}
 
     data_used = settings_math.get_data
@@ -155,7 +157,10 @@ def run_math_on_target(device_id: int, block_plot: bool = False) -> None:
     data_dut["data_ref"].append(data_ref)
 
     np.save(f"{exp0.get_path2run}/results_math.npy", data_dut, allow_pickle=True)
-    plot_mult_arithmetic(data_out, data_ref, path2save=exp0.get_path2run, block_plot=block_plot)
+    plot_mult_arithmetic(
+        data_out, data_ref, path2save=exp0.get_path2run.as_posix(), block_plot=block_plot
+    )
+    return exp0.get_path2run
 
 
 def plot_mult_arithmetic(

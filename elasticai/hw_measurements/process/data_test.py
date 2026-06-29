@@ -1,12 +1,48 @@
 import unittest
 
 import numpy as np
+import pytest
 
 from elasticai.hw_measurements import get_path_to_project
 from elasticai.hw_measurements.process.data import (
     MetricCalculator,
     do_fft,
+    window_method,
 )
+
+
+@pytest.mark.parametrize(
+    "method",
+    ["hamming", "hanning", "bartlett", "blackman", "gaussian"],
+)
+def test_output_length_matches_window_size(method):
+    window = window_method(64, method)
+    assert isinstance(window, np.ndarray)
+    assert len(window) == 64
+
+
+def test_default_method_is_hamming():
+    np.testing.assert_array_equal(window_method(50), np.hamming(50))
+
+
+def test_hamming_matches_numpy_reference():
+    np.testing.assert_array_equal(window_method(32, "hamming"), np.hamming(32))
+
+
+def test_guassian_matches_scipy_reference():
+    try:
+        from scipy.signal.windows import gaussian
+    except ImportError:
+        from scipy.signal import gaussian
+
+    window_size = 32
+    expected = gaussian(window_size, int(0.16 * window_size), sym=True)
+    np.testing.assert_array_equal(window_method(window_size, "gaussian"), expected)
+
+
+def test_invalid_method_raises_value_error():
+    with pytest.raises(ValueError, match="not available"):
+        window_method(10, "not_a_real_method")
 
 
 class TestDataAnalysis(unittest.TestCase):
@@ -186,3 +222,31 @@ class TestDataAnalysis(unittest.TestCase):
         )
         rslt = self.hndl.calculate_total_harmonics_distortion_from_spec(signal=spectrum, num_harmonics=2)
         self.assertEqual(rslt, -19.300251257175265)
+
+    def test_metric_thd_one_harmonic_spec_with_window(self):
+        sampling_rate = 1000.0
+        t = np.linspace(start=0.0, stop=1.0, num=int(sampling_rate), endpoint=True)
+        signal = (
+            np.sin(2 * np.pi * 50 * t)
+            + 0.1 * np.sin(2 * np.pi * 100 * t)
+            + 0.05 * np.sin(2 * np.pi * 150 * t)
+        )
+
+        spectrum = do_fft(
+            y=signal,
+            fs=sampling_rate,
+            method_window="hamming",
+        )
+        rslt = self.hndl.calculate_total_harmonics_distortion_from_spec(signal=spectrum, num_harmonics=2)
+        self.assertEqual(rslt, -19.11810872201894)
+
+    def test_gain_transfer_one(self):
+        amp_input = np.linspace(start=-1.0, stop=1.0, num=101, endpoint=True)
+        amp_output = np.linspace(start=-2.0, stop=2.0, num=101, endpoint=True)
+
+        rslt = self.hndl.calculate_gain_from_transfer(
+            stim_input=amp_input,
+            src_output=amp_output,
+        )
+        self.assertTrue(rslt.shape == (100,))
+        self.assertEqual(rslt.mean(), 2.0)

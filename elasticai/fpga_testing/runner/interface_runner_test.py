@@ -28,11 +28,11 @@ class DummyRunner(InterfaceRunner):
 
     def get_dut_config(self, num_target: int) -> ConfigurationDUT:
         return ConfigurationDUT(
-            bitwidth_input=16,
+            bitwidth_input=8,
             bitwidth_output=8,
             dut_type=self._device_mode,
             num_duts=1,
-            num_inputs=1,
+            num_inputs=2,
             num_outputs=1,
         )
 
