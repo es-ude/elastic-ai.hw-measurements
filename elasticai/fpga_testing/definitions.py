@@ -2,11 +2,30 @@ from dataclasses import dataclass
 from enum import IntEnum
 
 
+@dataclass
+class ProtocolBitwidth:
+    CMD = 2
+    ADR = 6
+    DATA = 16
+
+    @property
+    def bytes_head(self) -> int:
+        return int((self.CMD + self.ADR) / 8)
+
+    @property
+    def bytes_data(self) -> int:
+        return int(self.DATA / 8)
+
+    @property
+    def bytes_total(self) -> int:
+        return self.bytes_head + self.bytes_data
+
+
 class ProtocolRegisterID(IntEnum):
-    DUT_CNTRL = 0
-    DUT_WR = 1
-    DUT_RD = 2
-    DUT_HEAD = 3
+    Control = 0
+    Write = 1
+    Read = 2
+    Header = 3
 
 
 class ConfigurationID(IntEnum):
