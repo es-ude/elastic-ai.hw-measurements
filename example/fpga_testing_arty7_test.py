@@ -3,13 +3,13 @@ from time import sleep
 
 import pytest
 
-from .device_serial import DeviceSerial
+from example.fpga_testing_arty7 import DeviceArty7
 
 
 class TestingFPGA(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.fpga_dut = DeviceSerial(com_port="AUTOCOM")
+        cls.fpga_dut = DeviceArty7(com_port="AUTOCOM")
         cls.fpga_dut.open_serial()
 
     @classmethod

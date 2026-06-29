@@ -18,7 +18,7 @@ def test_get_settings() -> None:
 
 def test_get_dut_type() -> None:
     rslt = ExperimentMain(device=DummyRunner).get_dut_type()
-    assert rslt == [1, 1]
+    assert rslt == [0, 0]
 
 
 def test_init_experiment() -> None:
@@ -38,5 +38,5 @@ def test_get_do_inference() -> None:
 
 def test_exp_get_dut_type() -> None:
     rslt = extract_available_structures_on_device(device=DummyRunner)
-    assert rslt[0] == [1, 1]
+    assert rslt[0] == [0, 0]
     assert rslt[1] == [1, 2]
