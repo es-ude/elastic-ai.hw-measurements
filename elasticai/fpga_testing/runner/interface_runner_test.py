@@ -52,10 +52,7 @@ class DummyRunner(InterfaceRunner):
         return bytes(data)
 
     def do_inference_empty(self, num_cycles: int) -> bytes:
-        val = bytes()
-        for _ in range(num_cycles):
-            val += b"dly"
-        return val
+        return bytes(b"dly" * num_cycles)
 
 
 @pytest.mark.parametrize("value, expected", [(1, 2**15), (15, 2**1)])

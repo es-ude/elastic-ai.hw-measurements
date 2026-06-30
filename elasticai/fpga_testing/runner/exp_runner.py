@@ -10,7 +10,7 @@ from elasticai.fpga_testing._helper import YamlConfigHandler
 from elasticai.fpga_testing.runner.interface_runner import InterfaceRunner
 
 
-@dataclass
+@dataclass(frozen=True)
 class ExperimentSettings:
     """Class for handling the experiment
     Attributes:
@@ -22,6 +22,12 @@ class ExperimentSettings:
     selected_dut: list
 
 
+DefaultSettingsExp = ExperimentSettings(
+    com_port="AUTOCOM",
+    selected_dut=[1, 2],
+)
+
+
 class ExperimentMain:
     _device: InterfaceRunner
     _path2run: Path
@@ -29,13 +35,16 @@ class ExperimentMain:
     _buffer_data_send: list
     _buffer_data_get: bytes
 
-    def __init__(self, device: type[InterfaceRunner]) -> None:
+    def __init__(
+        self, device: type[InterfaceRunner], settings: ExperimentSettings = DefaultSettingsExp
+    ) -> None:
         """Class for handling the Experiment Main Setup
-        :param device:  Device class
-        :return:        None
+        :param device:      Device class
+        :param settings:    ExperimentSettings class
+        :return:            None
         """
         self._settings = YamlConfigHandler(
-            yaml_template=ExperimentSettings(com_port="AUTOCOM", selected_dut=[1, 2]),
+            yaml_template=settings,
             path2yaml=get_path_to_project("config"),
             yaml_name="Config_Exp",
         ).get_class(ExperimentSettings)
@@ -99,11 +108,13 @@ class ExperimentMain:
         return process_duration
 
 
-def extract_available_structures_on_device(device: type[InterfaceRunner]) -> tuple[list, list]:
-    """Function for extracting available structures on device
-    :param device:  Device class
-    :return:        Two list with [0] available structures on device and [1] selected test on device
+def extract_available_structures_on_device(
+    device: type[InterfaceRunner], settings: ExperimentSettings = DefaultSettingsExp
+) -> tuple[list, list]:
+    """Function for extracting available structures on-device
+    :param device:      Device class
+    :param settings:    ExperimentSettings class
+    :return:            Two list with [0] available structures on device and [1] selected test on device
     """
-    exp = ExperimentMain(device=device)
-    set = exp.get_settings
-    return exp.get_dut_type(), set.selected_dut
+    exp = ExperimentMain(device=device, settings=settings)
+    return exp.get_dut_type(), exp.get_settings.selected_dut
