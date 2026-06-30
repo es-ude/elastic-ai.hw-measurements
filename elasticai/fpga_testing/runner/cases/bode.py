@@ -237,7 +237,7 @@ def run_filter_on_target(device: type[InterfaceRunner], device_id: int, block_pl
         data_dut["gain_dut"].append(gain)
         data_dut["phase_dut"].append(phase)
     # --- Ending
-    np.save(f"{exp0.get_path2run}/results_bode.npy", data_dut, allow_pickle=True)
+    np.save(f"{exp0.get_path2run}/results_filter.npy", data_dut, allow_pickle=True)
     plot_bode(f_sig, data_dut, exp0.get_path2run.as_posix(), block_plot=block_plot)
     return exp0.get_path2run
 

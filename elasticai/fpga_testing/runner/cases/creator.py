@@ -250,5 +250,5 @@ def run_inference_on_target(
         f"Results: \tcnt_true = {100 * cnt_true / inference_expected.shape[0]:.2f} %,"
         f"\t\tcnt_false = {100 * cnt_false / inference_expected.shape[0]:.2f} %"
     )
-    np.save(f"{exp0.get_path2run}/results.npy", data_dut, allow_pickle=True)
+    np.save(f"{exp0.get_path2run}/results_dnn.npy", data_dut, allow_pickle=True)
     return exp0.get_path2run

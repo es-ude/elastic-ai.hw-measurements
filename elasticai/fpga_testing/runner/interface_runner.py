@@ -90,7 +90,7 @@ class InterfaceRunner(ABC):
         config0 = self.get_dut_config(0)
 
         dict_config = dict()
-        for idx in range(config0.num_duts + 1):
+        for idx in range(config0.num_duts):
             dict_config.update({idx: self.get_dut_config(idx)})
         return dict_config
 
