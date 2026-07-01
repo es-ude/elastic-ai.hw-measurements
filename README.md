@@ -13,6 +13,6 @@ After installation, you can put-in ``uv sync`` into a terminal and the venv will
 We also recommend to use ``devenv``.
 
 ## Structure
-This repo includes two sub-packagges:
+This repo includes two sub-packages:
 - Testing Verilog code on real FPGA ([Link to Readme](elasticai/fpga_testing/README.md))
 - Testing analog components of your system ([Link to Readme](elasticai/hw_measurements/README.md))
