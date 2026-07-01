@@ -1,0 +1,25 @@
+
+10. Printing statistics.
+
+=== TOP_MODULE ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      235 wires
+     1821 wire bits
+      235 public wires
+     1821 public wire bits
+        8 ports
+       11 port bits
+      233 cells
+        1   $_TBUF_
+        6   $scopeinfo
+        4   SB_DFF
+        2   SB_DFFE
+      110   SB_DFFESR
+        1   SB_DFFESS
+        3   SB_DFFSR
+        2   SB_DFFSS
+        1   SB_GB
+      103   SB_LUT4
+

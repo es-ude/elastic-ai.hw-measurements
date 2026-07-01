@@ -1,0 +1,37 @@
+Report for critical path:
+-------------------------
+
+        lc40_15_2_3 (LogicCell40) [clk] -> lcout: 1.491 ns
+     1.491 ns net_56700 (SPI_MOD.DFOR_MIDDLEWARE_SB_DFFESR_Q_E[1])
+        t425 (LocalMux) I -> O: 1.099 ns
+        inmux_15_1_60452_60517 (InMux) I -> O: 0.662 ns
+        lc40_15_1_7 (LogicCell40) in1 -> lcout: 1.232 ns
+     4.484 ns net_56576 (SPI_CSN_SB_LUT4_I1_O[1])
+        odrv_15_1_56576_56745 (Odrv4) I -> O: 0.649 ns
+        t418 (LocalMux) I -> O: 1.099 ns
+        inmux_15_3_60733_60760 (InMux) I -> O: 0.662 ns
+        lc40_15_3_0 (LogicCell40) in0 -> lcout: 1.285 ns
+     8.179 ns net_56856 (SPI_CSN_SB_LUT4_I1_O_SB_LUT4_I3_O)
+        odrv_15_3_56856_53171 (Odrv4) I -> O: 0.649 ns
+        t455 (Span4Mux_v4) I -> O: 0.649 ns
+        t454 (Span4Mux_v4) I -> O: 0.649 ns
+        t453 (Span4Mux_v4) I -> O: 0.649 ns
+        t452 (Span4Mux_v4) I -> O: 0.649 ns
+        t451 (Span4Mux_v4) I -> O: 0.649 ns
+        t450 (Span4Mux_v4) I -> O: 0.649 ns
+        t449 (Span4Mux_v4) I -> O: 0.649 ns
+        t448 (LocalMux) I -> O: 1.099 ns
+        t447 (IoInMux) I -> O: 0.662 ns
+        t446 (ICE_GB) USERSIGNALTOGLOBALBUFFER -> GLOBALBUFFEROUTPUT: 1.589 ns
+        t445 (gio2CtrlBuf) I -> O: 0.000 ns
+        t444 (GlobalMux) I -> O: 0.278 ns
+    17.000 ns seg_10_1_glb_netwk_1_6
+
+Resolvable net names on path:
+     1.491 ns ..  3.252 ns SPI_MOD.DFOR_MIDDLEWARE_SB_DFFESR_Q_E[1]
+     4.484 ns ..  6.894 ns SPI_CSN_SB_LUT4_I1_O[1]
+     8.179 ns ..  8.828 ns SPI_CSN_SB_LUT4_I1_O_SB_LUT4_I3_O
+
+Total number of logic levels: 3
+Total path delay: 17.00 ns (58.82 MHz)
+

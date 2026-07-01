@@ -1,21 +1,10 @@
-from .vivado import (
-    VivadoHierarchyPowerEntry as VivadoHierarchyPowerEntry,
-)
-from .vivado import (
-    VivadoMetrics as VivadoMetrics,
-)
-from .vivado import (
-    VivadoPowerReport as VivadoPowerReport,
-)
-from .vivado import (
-    VivadoPowerSummary as VivadoPowerSummary,
-)
-from .vivado import (
-    VivadoTimingSummary as VivadoTimingSummary,
-)
-from .vivado import (
-    VivadoUtilizationSummary as VivadoUtilizationSummary,
-)
-from .vivado import (
-    copy_vivado_implementation_results as copy_vivado_implementation_results,
-)
+from .oss_cad import NextpnrMetrics as NextpnrMetrics
+from .oss_cad import NextpnrTimingSummary as NextpnrTimingSummary
+from .oss_cad import NextpnrUtilizationSummary as NextpnrUtilizationSummary
+from .oss_cad import copy_osscad_implementation_results as copy_osscad_implementation_results
+from .vivado import VivadoMetrics as VivadoMetrics
+from .vivado import VivadoPowerReport as VivadoPowerReport
+from .vivado import VivadoPowerSummary as VivadoPowerSummary
+from .vivado import VivadoTimingSummary as VivadoTimingSummary
+from .vivado import VivadoUtilizationSummary as VivadoUtilizationSummary
+from .vivado import copy_vivado_implementation_results as copy_vivado_implementation_results
