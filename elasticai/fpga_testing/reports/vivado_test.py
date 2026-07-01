@@ -1,10 +1,17 @@
 from pathlib import Path
+from shutil import rmtree
 
 import pytest
 
 from elasticai.hw_measurements import get_path_to_project
 
-from .vivado import VivadoMetrics, VivadoPowerReport, VivadoTimingSummary, VivadoUtilizationSummary
+from .vivado import (
+    VivadoMetrics,
+    VivadoPowerReport,
+    VivadoTimingSummary,
+    VivadoUtilizationSummary,
+    copy_vivado_implementation_results,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -12,11 +19,28 @@ def vivado_path():
     yield get_path_to_project("artefact") / "arty7"
 
 
+@pytest.fixture(autouse=True)
+def temp_path():
+    path = get_path_to_project("temp_reports") / "vivado"
+    if path.exists():
+        rmtree(path)
+    yield path
+
+
+def test_copy_report_files_not_found(vivado_path: Path, temp_path: Path):
+    try:
+        copy_vivado_implementation_results(vivado_path, temp_path)
+    except FileNotFoundError:
+        assert True
+    else:
+        assert False
+
+
 def test_extract_timing_report(vivado_path: Path):
     summary = VivadoTimingSummary.from_rpt(vivado_path)
 
     assert type(summary) == VivadoTimingSummary
-    assert summary.device == '7a35ti-csg324'
+    assert summary.device == "7a35ti-csg324"
     assert summary.tns == 0.0
     assert summary.tpws == 0.0
     assert summary.whs == 0.117
@@ -28,7 +52,7 @@ def test_extract_utilization_report(vivado_path: Path):
     summary = VivadoUtilizationSummary.from_rpt(vivado_path)
 
     assert type(summary) == VivadoUtilizationSummary
-    assert summary.device == 'xc7a35ticsg324-1L'
+    assert summary.device == "xc7a35ticsg324-1L"
     assert summary.bram_tiles_used == 0
     assert summary.bram_tiles_available == 50
     assert summary.slice_luts_used == 636
@@ -40,7 +64,7 @@ def test_extract_utilization_report(vivado_path: Path):
 def test_extract_power_report(vivado_path: Path):
     summary = VivadoPowerReport.from_rpt(vivado_path)
     assert type(summary) == VivadoPowerReport
-    assert summary.summary.device == 'xc7a35ticsg324-1L'
+    assert summary.summary.device == "xc7a35ticsg324-1L"
     assert summary.summary.total_on_chip_power_w == 0.072
     assert len(summary.hierarchy) == 4
 
@@ -48,7 +72,7 @@ def test_extract_power_report(vivado_path: Path):
 def test_extract_all_metrics(vivado_path: Path):
     summary = VivadoMetrics.from_rpt(vivado_path)
     assert type(summary) == VivadoMetrics
-    assert summary.device == 'xc7a35ticsg324-1L'
+    assert summary.device == "xc7a35ticsg324-1L"
     assert summary.timing.tns == 0.0
     assert summary.timing.tpws == 0.0
     assert summary.power_summary.total_on_chip_power_w == 0.072
